@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><title>Form error — broken</title>
+<link rel="stylesheet" href="/anim/_base.css">
+<style>
+  /* SEEDED FAULT: error toggles via display:none → display:block. Pops in instantly. */
+  form { max-width: 420px; margin-top: 24px; }
+  .field { margin-bottom: 14px; }
+  .err { color: var(--danger); font-size: 13px; display: none; margin-top: 6px; }
+  .field.has-error .err { display: block; }
+  .field.has-error input { border-color: var(--danger); }
+</style></head>
+<body><main class="frame">
+  <h1>Sign up</h1>
+  <p class="muted">Errors pop in with no animation.</p>
+  <form id="f">
+    <div class="field"><label>Name</label><input id="name"><div class="err">Please enter your name.</div></div>
+    <div class="field"><label>Email</label><input id="email" type="email"><div class="err">Please enter a valid email.</div></div>
+    <button class="btn" type="submit">Submit</button>
+  </form>
+  <script>
+    document.getElementById('f').addEventListener('submit', (e) => {
+      e.preventDefault();
+      document.querySelectorAll('.field').forEach(f => {
+        const i = f.querySelector('input');
+        if (!i.value.trim() || (i.type === 'email' && !/.+@.+\..+/.test(i.value))) f.classList.add('has-error');
+        else f.classList.remove('has-error');
+      });
+    });
+  </script>
+</main></body></html>

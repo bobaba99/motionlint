@@ -1,0 +1,68 @@
+{
+  "name": "motionlint",
+  "version": "0.1.0",
+  "description": "AI design review in your terminal — automated visual UI/UX analysis using vision LLMs.",
+  "keywords": [
+    "ux",
+    "ui",
+    "design-review",
+    "playwright",
+    "claude",
+    "ollama",
+    "vision",
+    "mcp",
+    "claude-code",
+    "screenshot",
+    "ai"
+  ],
+  "license": "MIT",
+  "author": "Resila Technologies Inc.",
+  "homepage": "https://github.com/bobaba99/motionlint#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/bobaba99/motionlint.git"
+  },
+  "bugs": {
+    "url": "https://github.com/bobaba99/motionlint/issues"
+  },
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/types.d.ts",
+  "bin": {
+    "motionlint": "dist/index.js"
+  },
+  "files": [
+    "dist",
+    "prompts",
+    ".motionlintrc.json",
+    "README.md",
+    "LICENSE"
+  ],
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "start": "node dist/index.js",
+    "prepublishOnly": "npm run build",
+    "test": "node --test --import tsx test/*.test.ts",
+    "demo": "node demo/server.mjs",
+    "review:demo": "npm run build && node dist/index.js review http://localhost:4173 --record",
+    "postinstall": "node -e \"console.error('\\n  [motionlint] One more step: install Playwright Chromium so capture works:\\n    npx playwright install chromium\\n')\""
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.0.4",
+    "commander": "^12.1.0",
+    "cosmiconfig": "^9.0.0",
+    "kleur": "^4.1.5",
+    "ora": "^8.1.1",
+    "playwright": "^1.49.1",
+    "sharp": "^0.33.5"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.2",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.2"
+  }
+}

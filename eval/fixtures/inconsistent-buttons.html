@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Aurora — Settings</title>
+<link rel="stylesheet" href="/eval/_base.css">
+<style>
+  /* SEEDED FAULT: identical primary action ("Save") rendered with five wildly different button styles. */
+  .row .btn-a { background: #2563eb; color: #fff; padding: 10px 18px; border-radius: 6px; border: 0; font-size: 14px; }
+  .row .btn-b { background: #16a34a; color: #fff; padding: 6px 10px; border-radius: 999px; border: 0; font-size: 12px; font-weight: 700; text-transform: uppercase; }
+  .row .btn-c { background: transparent; color: #b91c1c; padding: 16px 26px; border: 2px solid #b91c1c; border-radius: 0; font-size: 18px; font-style: italic; }
+  .row .btn-d { background: linear-gradient(135deg, #f97316, #ec4899); color: #000; padding: 14px 28px; border-radius: 18px; border: 3px dashed #facc15; font-family: "Comic Sans MS", cursive; font-size: 16px; }
+  .row .btn-e { background: #111827; color: #f9fafb; padding: 4px 8px; border: 0; border-radius: 2px; font-size: 11px; letter-spacing: .14em; }
+</style>
+</head>
+<body>
+<main class="frame">
+  <h1>Settings</h1>
+  <p class="muted">Each section below has its own “Save” button — they all do the same thing.</p>
+
+  <hr>
+  <h2>Profile</h2>
+  <p>Your display name and avatar.</p>
+  <div class="row"><button class="btn btn-a">Save</button></div>
+
+  <hr>
+  <h2>Notifications</h2>
+  <p>Email and push notifications.</p>
+  <div class="row"><button class="btn btn-b">Save</button></div>
+
+  <hr>
+  <h2>Workspace</h2>
+  <p>Default project, locale, and timezone.</p>
+  <div class="row"><button class="btn btn-c">Save</button></div>
+
+  <hr>
+  <h2>Billing</h2>
+  <p>Invoices and payment method.</p>
+  <div class="row"><button class="btn btn-d">Save</button></div>
+
+  <hr>
+  <h2>Danger zone</h2>
+  <p>Delete workspace permanently.</p>
+  <div class="row"><button class="btn btn-e">Save</button></div>
+</main>
+</body>
+</html>

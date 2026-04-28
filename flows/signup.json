@@ -1,0 +1,26 @@
+{
+  "$schema": "https://motionlint.dev/flow-schema.json",
+  "name": "signup-happy-path",
+  "url": "http://localhost:4173/signup",
+  "viewport": { "name": "desktop", "width": 1440, "height": 900 },
+  "expected_animations": [
+    "hero reveal sequence (eyebrow → title → lead → form) staggered on initial paint",
+    "input focus ring fades in when each field receives focus",
+    "submit button has a pressed state when clicked",
+    "after submit, a success card slides in beneath the form",
+    "form errors fade in for invalid fields"
+  ],
+  "steps": [
+    { "do": "capture", "label": "initial paint" },
+    { "do": "click", "selector": "input#name", "label": "focus name field" },
+    { "do": "type", "selector": "input#name", "value": "Ada Lovelace", "label": "type name" },
+    { "do": "click", "selector": "input#email", "label": "focus email field" },
+    { "do": "type", "selector": "input#email", "value": "ada@example.com", "label": "type email" },
+    { "do": "click", "selector": "input#company", "label": "focus company field" },
+    { "do": "type", "selector": "input#company", "value": "Aurora Labs", "label": "type company" },
+    { "do": "click", "selector": "select#role", "label": "open role dropdown" },
+    { "do": "click", "selector": "button[type=submit]", "label": "submit (with empty role — expect error)" },
+    { "do": "wait", "ms": 600 },
+    { "do": "capture", "label": "post-submit error states" }
+  ]
+}

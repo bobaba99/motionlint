@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><title>Stagger entrance — good</title>
+<link rel="stylesheet" href="/anim/_base.css">
+<style>
+  .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-top: 24px; }
+  .card {
+    background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 22px;
+    opacity: 0; transform: translateY(16px);
+    animation: rise .55s cubic-bezier(.16,1,.3,1) forwards;
+  }
+  .card:nth-child(1) { animation-delay: 0ms; }
+  .card:nth-child(2) { animation-delay: 80ms; }
+  .card:nth-child(3) { animation-delay: 160ms; }
+  .card:nth-child(4) { animation-delay: 240ms; }
+  .card:nth-child(5) { animation-delay: 320ms; }
+  .card:nth-child(6) { animation-delay: 400ms; }
+  @keyframes rise { to { opacity: 1; transform: translateY(0); } }
+</style></head>
+<body><main class="frame">
+  <h1>Pricing</h1>
+  <p class="muted">Cards rise in with 80ms stagger.</p>
+  <div class="grid">
+    <article class="card"><h3>Hobby</h3><p>$0/mo</p></article>
+    <article class="card"><h3>Starter</h3><p>$9/mo</p></article>
+    <article class="card"><h3>Team</h3><p>$29/mo</p></article>
+    <article class="card"><h3>Business</h3><p>$99/mo</p></article>
+    <article class="card"><h3>Enterprise</h3><p>Custom</p></article>
+    <article class="card"><h3>Free trial</h3><p>14 days</p></article>
+  </div>
+</main></body></html>

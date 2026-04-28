@@ -1,0 +1,29 @@
+{
+  "$schema": "https://motionlint.dev/schema.json",
+  "provider": "auto",
+  "model": null,
+  "fallbackProvider": "anthropic",
+  "fallbackModel": "claude-sonnet-4-20250514",
+  "viewports": {
+    "mobile": { "width": 375, "height": 812 },
+    "tablet": { "width": 768, "height": 1024 },
+    "desktop": { "width": 1440, "height": 900 }
+  },
+  "defaultViewports": ["mobile", "desktop"],
+  "waitFor": "networkidle",
+  "waitTimeout": 10000,
+  "screenshotDir": ".motionlint/screenshots",
+  "videoDir": ".motionlint/videos",
+  "reportDir": ".motionlint/reports",
+  "rules": null,
+  "record": false,
+  "ci": {
+    "threshold": "warning",
+    "failOnCritical": true
+  },
+  "auth": {
+    "cookies": null,
+    "localStorage": null,
+    "beforeNavigate": null
+  }
+}

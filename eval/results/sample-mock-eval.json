@@ -1,0 +1,881 @@
+{
+  "generated_at": "2026-04-28T06:50:33.609Z",
+  "provider": "mock",
+  "model": "motionlint-mock-heuristics",
+  "truth_version": "1.1",
+  "terminology": {
+    "recall": "fraction of labeled (seeded) issues the model correctly identified",
+    "precision_proxy": "fraction of model-raised issues that align with a labeled expectation; surplus = surprise issues",
+    "control_violation": "control-fixture (deliberately clean page) was flagged with critical or excess warning issues",
+    "wcag_aa_text_contrast": "4.5:1 for normal text, 3:1 for large (>=18pt or 14pt bold)",
+    "fitts_tap_target_minimum": "48x48 CSS px (Material) / 44x44 (Apple HIG)",
+    "body_copy_minimum": "16px / 1.5 line-height for sustained reading",
+    "line_length_optimal": "45-75 characters per line"
+  },
+  "levels": [
+    {
+      "level": "L1-basic",
+      "summary": "One isolated, glaringly obvious seeded fault per fixture. A competent vision model should detect every fault.",
+      "thresholds": {
+        "min_recall": 0.8,
+        "max_control_violations": 0
+      },
+      "fixtures": [
+        {
+          "fixture": "low-contrast-cta",
+          "viewport": "desktop",
+          "level": "L1-basic",
+          "label": "Primary CTA uses light gray text on a white background — clearly fails WCAG AA contrast (≥4.5:1).",
+          "ux_concept": "color-contrast WCAG AA",
+          "detected": 0,
+          "expected": 1,
+          "recall": 0,
+          "surprise_critical": 0,
+          "surprise_warning": 1,
+          "control_violation": false,
+          "per_expected": [
+            {
+              "expected": {
+                "categories": [
+                  "contrast",
+                  "color"
+                ],
+                "min_severity": "warning",
+                "any_keywords": [
+                  "cta",
+                  "button",
+                  "sign in",
+                  "primary",
+                  "contrast",
+                  "wcag"
+                ]
+              },
+              "matched_issue": null
+            }
+          ],
+          "raw": {
+            "overall_score": 7,
+            "summary": "Heuristic mock review (no vision LLM configured). Capture decoded successfully (1532 bytes compressed). Configure ANTHROPIC_API_KEY, OPENAI_API_KEY, GOOGLE_API_KEY or run Ollama locally for real analysis.",
+            "issues": [
+              {
+                "category": "hierarchy",
+                "severity": "warning",
+                "location": "above-the-fold hero (desktop)",
+                "issue": "Primary CTA does not visually dominate the hero section.",
+                "why_it_matters": "Users may not immediately know what action to take, lowering conversion.",
+                "fix": "Increase the CTA's color contrast and font weight; reduce competing elements nearby."
+              },
+              {
+                "category": "spacing",
+                "severity": "suggestion",
+                "location": "feature card grid (desktop)",
+                "issue": "Gaps between feature cards look uneven across rows.",
+                "why_it_matters": "Inconsistent rhythm reads as unpolished and reduces perceived quality.",
+                "fix": "Standardize on a single spacing token (e.g., gap-6) and verify column gutters match."
+              },
+              {
+                "category": "typography",
+                "severity": "suggestion",
+                "location": "body copy throughout (desktop)",
+                "issue": "Body text appears smaller than 16px on desktop.",
+                "why_it_matters": "Reduces readability for users over 35 and on high-DPI screens.",
+                "fix": "Bump body to 16px / line-height 1.5; reserve 14px for captions only."
+              }
+            ],
+            "strengths": [
+              "Page rendered without errors and the screenshot was captured cleanly.",
+              "Layout fits within the target viewport without horizontal scroll."
+            ],
+            "viewport": "desktop"
+          }
+        },
+        {
+          "fixture": "tiny-body-text",
+          "viewport": "desktop",
+          "level": "L1-basic",
+          "label": "Body copy rendered at 9px — far below the 16px sustained-reading threshold.",
+          "ux_concept": "body-copy minimum size / readability",
+          "detected": 0,
+          "expected": 1,
+          "recall": 0,
+          "surprise_critical": 0,
+          "surprise_warning": 1,
+          "control_violation": false,
+          "per_expected": [
+            {
+              "expected": {
+                "categories": [
+                  "typography"
+                ],
+                "min_severity": "warning",
+                "any_keywords": [
+                  "body",
+                  "text",
+                  "size",
+                  "small",
+                  "legibil",
+                  "readab",
+                  "px"
+                ]
+              },
+              "matched_issue": null
+            }
+          ],
+          "raw": {
+            "overall_score": 7,
+            "summary": "Heuristic mock review (no vision LLM configured). Capture decoded successfully (1996 bytes compressed). Configure ANTHROPIC_API_KEY, OPENAI_API_KEY, GOOGLE_API_KEY or run Ollama locally for real analysis.",
+            "issues": [
+              {
+                "category": "hierarchy",
+                "severity": "warning",
+                "location": "above-the-fold hero (desktop)",
+                "issue": "Primary CTA does not visually dominate the hero section.",
+                "why_it_matters": "Users may not immediately know what action to take, lowering conversion.",
+                "fix": "Increase the CTA's color contrast and font weight; reduce competing elements nearby."
+              },
+              {
+                "category": "spacing",
+                "severity": "suggestion",
+                "location": "feature card grid (desktop)",
+                "issue": "Gaps between feature cards look uneven across rows.",
+                "why_it_matters": "Inconsistent rhythm reads as unpolished and reduces perceived quality.",
+                "fix": "Standardize on a single spacing token (e.g., gap-6) and verify column gutters match."
+              },
+              {
+                "category": "typography",
+                "severity": "suggestion",
+                "location": "body copy throughout (desktop)",
+                "issue": "Body text appears smaller than 16px on desktop.",
+                "why_it_matters": "Reduces readability for users over 35 and on high-DPI screens.",
+                "fix": "Bump body to 16px / line-height 1.5; reserve 14px for captions only."
+              }
+            ],
+            "strengths": [
+              "Page rendered without errors and the screenshot was captured cleanly.",
+              "Layout fits within the target viewport without horizontal scroll."
+            ],
+            "viewport": "desktop"
+          }
+        },
+        {
+          "fixture": "cramped-spacing",
+          "viewport": "desktop",
+          "level": "L1-basic",
+          "label": "All padding and margin removed — content slammed together with zero breathing room.",
+          "ux_concept": "Gestalt proximity, vertical rhythm, whitespace",
+          "detected": 0,
+          "expected": 1,
+          "recall": 0,
+          "surprise_critical": 0,
+          "surprise_warning": 1,
+          "control_violation": false,
+          "per_expected": [
+            {
+              "expected": {
+                "categories": [
+                  "spacing",
+                  "alignment"
+                ],
+                "min_severity": "warning",
+                "any_keywords": [
+                  "spacing",
+                  "padding",
+                  "margin",
+                  "cramp",
+                  "breathing",
+                  "whitespace",
+                  "gap"
+                ]
+              },
+              "matched_issue": null
+            }
+          ],
+          "raw": {
+            "overall_score": 7,
+            "summary": "Heuristic mock review (no vision LLM configured). Capture decoded successfully (2844 bytes compressed). Configure ANTHROPIC_API_KEY, OPENAI_API_KEY, GOOGLE_API_KEY or run Ollama locally for real analysis.",
+            "issues": [
+              {
+                "category": "hierarchy",
+                "severity": "warning",
+                "location": "above-the-fold hero (desktop)",
+                "issue": "Primary CTA does not visually dominate the hero section.",
+                "why_it_matters": "Users may not immediately know what action to take, lowering conversion.",
+                "fix": "Increase the CTA's color contrast and font weight; reduce competing elements nearby."
+              },
+              {
+                "category": "spacing",
+                "severity": "suggestion",
+                "location": "feature card grid (desktop)",
+                "issue": "Gaps between feature cards look uneven across rows.",
+                "why_it_matters": "Inconsistent rhythm reads as unpolished and reduces perceived quality.",
+                "fix": "Standardize on a single spacing token (e.g., gap-6) and verify column gutters match."
+              },
+              {
+                "category": "typography",
+                "severity": "suggestion",
+                "location": "body copy throughout (desktop)",
+                "issue": "Body text appears smaller than 16px on desktop.",
+                "why_it_matters": "Reduces readability for users over 35 and on high-DPI screens.",
+                "fix": "Bump body to 16px / line-height 1.5; reserve 14px for captions only."
+              }
+            ],
+            "strengths": [
+              "Page rendered without errors and the screenshot was captured cleanly.",
+              "Layout fits within the target viewport without horizontal scroll."
+            ],
+            "viewport": "desktop"
+          }
+        },
+        {
+          "fixture": "weak-hierarchy",
+          "viewport": "desktop",
+          "level": "L1-basic",
+          "label": "H1, H2, and H3 are all the same size and weight — no visual hierarchy.",
+          "ux_concept": "type scale / typographic hierarchy",
+          "detected": 1,
+          "expected": 1,
+          "recall": 1,
+          "surprise_critical": 0,
+          "surprise_warning": 0,
+          "control_violation": false,
+          "per_expected": [
+            {
+              "expected": {
+                "categories": [
+                  "hierarchy",
+                  "typography"
+                ],
+                "min_severity": "warning",
+                "any_keywords": [
+                  "hierarchy",
+                  "heading",
+                  "h1",
+                  "h2",
+                  "h3",
+                  "size",
+                  "scan",
+                  "structure"
+                ]
+              },
+              "matched_issue": {
+                "category": "hierarchy",
+                "severity": "warning",
+                "location": "above-the-fold hero (desktop)",
+                "issue": "Primary CTA does not visually dominate the hero section.",
+                "why_it_matters": "Users may not immediately know what action to take, lowering conversion.",
+                "fix": "Increase the CTA's color contrast and font weight; reduce competing elements nearby."
+              }
+            }
+          ],
+          "raw": {
+            "overall_score": 7,
+            "summary": "Heuristic mock review (no vision LLM configured). Capture decoded successfully (2836 bytes compressed). Configure ANTHROPIC_API_KEY, OPENAI_API_KEY, GOOGLE_API_KEY or run Ollama locally for real analysis.",
+            "issues": [
+              {
+                "category": "hierarchy",
+                "severity": "warning",
+                "location": "above-the-fold hero (desktop)",
+                "issue": "Primary CTA does not visually dominate the hero section.",
+                "why_it_matters": "Users may not immediately know what action to take, lowering conversion.",
+                "fix": "Increase the CTA's color contrast and font weight; reduce competing elements nearby."
+              },
+              {
+                "category": "spacing",
+                "severity": "suggestion",
+                "location": "feature card grid (desktop)",
+                "issue": "Gaps between feature cards look uneven across rows.",
+                "why_it_matters": "Inconsistent rhythm reads as unpolished and reduces perceived quality.",
+                "fix": "Standardize on a single spacing token (e.g., gap-6) and verify column gutters match."
+              },
+              {
+                "category": "typography",
+                "severity": "suggestion",
+                "location": "body copy throughout (desktop)",
+                "issue": "Body text appears smaller than 16px on desktop.",
+                "why_it_matters": "Reduces readability for users over 35 and on high-DPI screens.",
+                "fix": "Bump body to 16px / line-height 1.5; reserve 14px for captions only."
+              }
+            ],
+            "strengths": [
+              "Page rendered without errors and the screenshot was captured cleanly.",
+              "Layout fits within the target viewport without horizontal scroll."
+            ],
+            "viewport": "desktop"
+          }
+        },
+        {
+          "fixture": "mobile-overflow",
+          "viewport": "mobile",
+          "level": "L1-basic",
+          "label": "1100px-wide pricing table forces horizontal scrolling on a 375px viewport.",
+          "ux_concept": "responsive layout / horizontal overflow",
+          "detected": 0,
+          "expected": 1,
+          "recall": 0,
+          "surprise_critical": 0,
+          "surprise_warning": 1,
+          "control_violation": false,
+          "per_expected": [
+            {
+              "expected": {
+                "categories": [
+                  "responsiveness",
+                  "spacing"
+                ],
+                "min_severity": "warning",
+                "any_keywords": [
+                  "overflow",
+                  "scroll",
+                  "horizontal",
+                  "mobile",
+                  "responsive",
+                  "table",
+                  "viewport"
+                ]
+              },
+              "matched_issue": null
+            }
+          ],
+          "raw": {
+            "overall_score": 7,
+            "summary": "Heuristic mock review (no vision LLM configured). Capture decoded successfully (3636 bytes compressed). Configure ANTHROPIC_API_KEY, OPENAI_API_KEY, GOOGLE_API_KEY or run Ollama locally for real analysis.",
+            "issues": [
+              {
+                "category": "hierarchy",
+                "severity": "warning",
+                "location": "above-the-fold hero (mobile)",
+                "issue": "Primary CTA does not visually dominate the hero section. On mobile this is amplified because the CTA risks falling below the fold.",
+                "why_it_matters": "Users may not immediately know what action to take, lowering conversion.",
+                "fix": "Increase the CTA's color contrast and font weight; reduce competing elements nearby."
+              },
+              {
+                "category": "spacing",
+                "severity": "suggestion",
+                "location": "feature card grid (mobile)",
+                "issue": "Gaps between feature cards look uneven across rows.",
+                "why_it_matters": "Inconsistent rhythm reads as unpolished and reduces perceived quality.",
+                "fix": "Standardize on a single spacing token (e.g., gap-6) and verify column gutters match."
+              },
+              {
+                "category": "typography",
+                "severity": "suggestion",
+                "location": "body copy throughout (mobile)",
+                "issue": "Body text appears smaller than 16px on desktop.",
+                "why_it_matters": "Reduces readability for users over 35 and on high-DPI screens.",
+                "fix": "Bump body to 16px / line-height 1.5; reserve 14px for captions only."
+              }
+            ],
+            "strengths": [
+              "Page rendered without errors and the screenshot was captured cleanly.",
+              "Layout fits within the target viewport without horizontal scroll."
+            ],
+            "viewport": "mobile"
+          }
+        },
+        {
+          "fixture": "inconsistent-buttons",
+          "viewport": "desktop",
+          "level": "L1-basic",
+          "label": "Five identical 'Save' buttons rendered with five wildly different styles — no consistent button language.",
+          "ux_concept": "design-system consistency",
+          "detected": 0,
+          "expected": 1,
+          "recall": 0,
+          "surprise_critical": 0,
+          "surprise_warning": 1,
+          "control_violation": false,
+          "per_expected": [
+            {
+              "expected": {
+                "categories": [
+                  "consistency",
+                  "interaction"
+                ],
+                "min_severity": "warning",
+                "any_keywords": [
+                  "button",
+                  "consist",
+                  "style",
+                  "save",
+                  "system",
+                  "varied",
+                  "different"
+                ]
+              },
+              "matched_issue": null
+            }
+          ],
+          "raw": {
+            "overall_score": 7,
+            "summary": "Heuristic mock review (no vision LLM configured). Capture decoded successfully (2848 bytes compressed). Configure ANTHROPIC_API_KEY, OPENAI_API_KEY, GOOGLE_API_KEY or run Ollama locally for real analysis.",
+            "issues": [
+              {
+                "category": "hierarchy",
+                "severity": "warning",
+                "location": "above-the-fold hero (desktop)",
+                "issue": "Primary CTA does not visually dominate the hero section.",
+                "why_it_matters": "Users may not immediately know what action to take, lowering conversion.",
+                "fix": "Increase the CTA's color contrast and font weight; reduce competing elements nearby."
+              },
+              {
+                "category": "spacing",
+                "severity": "suggestion",
+                "location": "feature card grid (desktop)",
+                "issue": "Gaps between feature cards look uneven across rows.",
+                "why_it_matters": "Inconsistent rhythm reads as unpolished and reduces perceived quality.",
+                "fix": "Standardize on a single spacing token (e.g., gap-6) and verify column gutters match."
+              },
+              {
+                "category": "typography",
+                "severity": "suggestion",
+                "location": "body copy throughout (desktop)",
+                "issue": "Body text appears smaller than 16px on desktop.",
+                "why_it_matters": "Reduces readability for users over 35 and on high-DPI screens.",
+                "fix": "Bump body to 16px / line-height 1.5; reserve 14px for captions only."
+              }
+            ],
+            "strengths": [
+              "Page rendered without errors and the screenshot was captured cleanly.",
+              "Layout fits within the target viewport without horizontal scroll."
+            ],
+            "viewport": "desktop"
+          }
+        },
+        {
+          "fixture": "unclear-cta-copy",
+          "viewport": "desktop",
+          "level": "L1-basic",
+          "label": "Every CTA label is generic ('Click here', 'Submit', 'OK') — no verb-object pairing.",
+          "ux_concept": "microcopy / actionable labels",
+          "detected": 0,
+          "expected": 1,
+          "recall": 0,
+          "surprise_critical": 0,
+          "surprise_warning": 1,
+          "control_violation": false,
+          "per_expected": [
+            {
+              "expected": {
+                "categories": [
+                  "content",
+                  "interaction"
+                ],
+                "min_severity": "warning",
+                "any_keywords": [
+                  "click here",
+                  "label",
+                  "copy",
+                  "vague",
+                  "generic",
+                  "verb",
+                  "submit",
+                  "ok",
+                  "ambiguous",
+                  "unclear"
+                ]
+              },
+              "matched_issue": null
+            }
+          ],
+          "raw": {
+            "overall_score": 7,
+            "summary": "Heuristic mock review (no vision LLM configured). Capture decoded successfully (3088 bytes compressed). Configure ANTHROPIC_API_KEY, OPENAI_API_KEY, GOOGLE_API_KEY or run Ollama locally for real analysis.",
+            "issues": [
+              {
+                "category": "hierarchy",
+                "severity": "warning",
+                "location": "above-the-fold hero (desktop)",
+                "issue": "Primary CTA does not visually dominate the hero section.",
+                "why_it_matters": "Users may not immediately know what action to take, lowering conversion.",
+                "fix": "Increase the CTA's color contrast and font weight; reduce competing elements nearby."
+              },
+              {
+                "category": "spacing",
+                "severity": "suggestion",
+                "location": "feature card grid (desktop)",
+                "issue": "Gaps between feature cards look uneven across rows.",
+                "why_it_matters": "Inconsistent rhythm reads as unpolished and reduces perceived quality.",
+                "fix": "Standardize on a single spacing token (e.g., gap-6) and verify column gutters match."
+              },
+              {
+                "category": "typography",
+                "severity": "suggestion",
+                "location": "body copy throughout (desktop)",
+                "issue": "Body text appears smaller than 16px on desktop.",
+                "why_it_matters": "Reduces readability for users over 35 and on high-DPI screens.",
+                "fix": "Bump body to 16px / line-height 1.5; reserve 14px for captions only."
+              }
+            ],
+            "strengths": [
+              "Page rendered without errors and the screenshot was captured cleanly.",
+              "Layout fits within the target viewport without horizontal scroll."
+            ],
+            "viewport": "desktop"
+          }
+        },
+        {
+          "fixture": "disabled-no-distinction",
+          "viewport": "desktop",
+          "level": "L1-basic",
+          "label": "Disabled buttons are styled identically to active buttons — no opacity, no greying, no cursor change.",
+          "ux_concept": "interaction-state affordances",
+          "detected": 0,
+          "expected": 1,
+          "recall": 0,
+          "surprise_critical": 0,
+          "surprise_warning": 1,
+          "control_violation": false,
+          "per_expected": [
+            {
+              "expected": {
+                "categories": [
+                  "interaction",
+                  "consistency",
+                  "color"
+                ],
+                "min_severity": "warning",
+                "any_keywords": [
+                  "disabled",
+                  "state",
+                  "active",
+                  "distinguish",
+                  "affordance",
+                  "feedback",
+                  "indicate"
+                ]
+              },
+              "matched_issue": null
+            }
+          ],
+          "raw": {
+            "overall_score": 7,
+            "summary": "Heuristic mock review (no vision LLM configured). Capture decoded successfully (2220 bytes compressed). Configure ANTHROPIC_API_KEY, OPENAI_API_KEY, GOOGLE_API_KEY or run Ollama locally for real analysis.",
+            "issues": [
+              {
+                "category": "hierarchy",
+                "severity": "warning",
+                "location": "above-the-fold hero (desktop)",
+                "issue": "Primary CTA does not visually dominate the hero section.",
+                "why_it_matters": "Users may not immediately know what action to take, lowering conversion.",
+                "fix": "Increase the CTA's color contrast and font weight; reduce competing elements nearby."
+              },
+              {
+                "category": "spacing",
+                "severity": "suggestion",
+                "location": "feature card grid (desktop)",
+                "issue": "Gaps between feature cards look uneven across rows.",
+                "why_it_matters": "Inconsistent rhythm reads as unpolished and reduces perceived quality.",
+                "fix": "Standardize on a single spacing token (e.g., gap-6) and verify column gutters match."
+              },
+              {
+                "category": "typography",
+                "severity": "suggestion",
+                "location": "body copy throughout (desktop)",
+                "issue": "Body text appears smaller than 16px on desktop.",
+                "why_it_matters": "Reduces readability for users over 35 and on high-DPI screens.",
+                "fix": "Bump body to 16px / line-height 1.5; reserve 14px for captions only."
+              }
+            ],
+            "strengths": [
+              "Page rendered without errors and the screenshot was captured cleanly.",
+              "Layout fits within the target viewport without horizontal scroll."
+            ],
+            "viewport": "desktop"
+          }
+        },
+        {
+          "fixture": "empty-state-missing",
+          "viewport": "desktop",
+          "level": "L1-basic",
+          "label": "Empty list with no empty-state message, illustration, or call to action — user lands on a blank box.",
+          "ux_concept": "empty state / first-run guidance",
+          "detected": 0,
+          "expected": 1,
+          "recall": 0,
+          "surprise_critical": 0,
+          "surprise_warning": 1,
+          "control_violation": false,
+          "per_expected": [
+            {
+              "expected": {
+                "categories": [
+                  "loading_state",
+                  "content",
+                  "interaction"
+                ],
+                "min_severity": "warning",
+                "any_keywords": [
+                  "empty",
+                  "blank",
+                  "placeholder",
+                  "zero",
+                  "starter",
+                  "first run",
+                  "no data",
+                  "guidance"
+                ]
+              },
+              "matched_issue": null
+            }
+          ],
+          "raw": {
+            "overall_score": 7,
+            "summary": "Heuristic mock review (no vision LLM configured). Capture decoded successfully (1080 bytes compressed). Configure ANTHROPIC_API_KEY, OPENAI_API_KEY, GOOGLE_API_KEY or run Ollama locally for real analysis.",
+            "issues": [
+              {
+                "category": "hierarchy",
+                "severity": "warning",
+                "location": "above-the-fold hero (desktop)",
+                "issue": "Primary CTA does not visually dominate the hero section.",
+                "why_it_matters": "Users may not immediately know what action to take, lowering conversion.",
+                "fix": "Increase the CTA's color contrast and font weight; reduce competing elements nearby."
+              },
+              {
+                "category": "spacing",
+                "severity": "suggestion",
+                "location": "feature card grid (desktop)",
+                "issue": "Gaps between feature cards look uneven across rows.",
+                "why_it_matters": "Inconsistent rhythm reads as unpolished and reduces perceived quality.",
+                "fix": "Standardize on a single spacing token (e.g., gap-6) and verify column gutters match."
+              },
+              {
+                "category": "typography",
+                "severity": "suggestion",
+                "location": "body copy throughout (desktop)",
+                "issue": "Body text appears smaller than 16px on desktop.",
+                "why_it_matters": "Reduces readability for users over 35 and on high-DPI screens.",
+                "fix": "Bump body to 16px / line-height 1.5; reserve 14px for captions only."
+              }
+            ],
+            "strengths": [
+              "Page rendered without errors and the screenshot was captured cleanly.",
+              "Layout fits within the target viewport without horizontal scroll."
+            ],
+            "viewport": "desktop"
+          }
+        },
+        {
+          "fixture": "tap-target-too-small",
+          "viewport": "mobile",
+          "level": "L1-basic",
+          "label": "Toolbar icons rendered at 18×18px and packed tightly together — far below the 48×48 mobile tap target (Fitts/Material).",
+          "ux_concept": "Fitts's law / mobile tap target",
+          "detected": 0,
+          "expected": 1,
+          "recall": 0,
+          "surprise_critical": 0,
+          "surprise_warning": 1,
+          "control_violation": false,
+          "per_expected": [
+            {
+              "expected": {
+                "categories": [
+                  "responsiveness",
+                  "interaction"
+                ],
+                "min_severity": "warning",
+                "any_keywords": [
+                  "tap",
+                  "target",
+                  "touch",
+                  "small",
+                  "icon",
+                  "48",
+                  "44",
+                  "size",
+                  "mobile"
+                ]
+              },
+              "matched_issue": null
+            }
+          ],
+          "raw": {
+            "overall_score": 7,
+            "summary": "Heuristic mock review (no vision LLM configured). Capture decoded successfully (4360 bytes compressed). Configure ANTHROPIC_API_KEY, OPENAI_API_KEY, GOOGLE_API_KEY or run Ollama locally for real analysis.",
+            "issues": [
+              {
+                "category": "hierarchy",
+                "severity": "warning",
+                "location": "above-the-fold hero (mobile)",
+                "issue": "Primary CTA does not visually dominate the hero section. On mobile this is amplified because the CTA risks falling below the fold.",
+                "why_it_matters": "Users may not immediately know what action to take, lowering conversion.",
+                "fix": "Increase the CTA's color contrast and font weight; reduce competing elements nearby."
+              },
+              {
+                "category": "spacing",
+                "severity": "suggestion",
+                "location": "feature card grid (mobile)",
+                "issue": "Gaps between feature cards look uneven across rows.",
+                "why_it_matters": "Inconsistent rhythm reads as unpolished and reduces perceived quality.",
+                "fix": "Standardize on a single spacing token (e.g., gap-6) and verify column gutters match."
+              },
+              {
+                "category": "typography",
+                "severity": "suggestion",
+                "location": "body copy throughout (mobile)",
+                "issue": "Body text appears smaller than 16px on desktop.",
+                "why_it_matters": "Reduces readability for users over 35 and on high-DPI screens.",
+                "fix": "Bump body to 16px / line-height 1.5; reserve 14px for captions only."
+              }
+            ],
+            "strengths": [
+              "Page rendered without errors and the screenshot was captured cleanly.",
+              "Layout fits within the target viewport without horizontal scroll."
+            ],
+            "viewport": "mobile"
+          }
+        },
+        {
+          "fixture": "clean-control",
+          "viewport": "desktop",
+          "level": "L1-basic",
+          "label": "Deliberately well-designed control page. The vision model should NOT raise critical issues here.",
+          "ux_concept": "control / true-negative",
+          "detected": 0,
+          "expected": 0,
+          "recall": 1,
+          "surprise_critical": 0,
+          "surprise_warning": 1,
+          "control_violation": false,
+          "per_expected": [],
+          "raw": {
+            "overall_score": 7,
+            "summary": "Heuristic mock review (no vision LLM configured). Capture decoded successfully (2764 bytes compressed). Configure ANTHROPIC_API_KEY, OPENAI_API_KEY, GOOGLE_API_KEY or run Ollama locally for real analysis.",
+            "issues": [
+              {
+                "category": "hierarchy",
+                "severity": "warning",
+                "location": "above-the-fold hero (desktop)",
+                "issue": "Primary CTA does not visually dominate the hero section.",
+                "why_it_matters": "Users may not immediately know what action to take, lowering conversion.",
+                "fix": "Increase the CTA's color contrast and font weight; reduce competing elements nearby."
+              },
+              {
+                "category": "spacing",
+                "severity": "suggestion",
+                "location": "feature card grid (desktop)",
+                "issue": "Gaps between feature cards look uneven across rows.",
+                "why_it_matters": "Inconsistent rhythm reads as unpolished and reduces perceived quality.",
+                "fix": "Standardize on a single spacing token (e.g., gap-6) and verify column gutters match."
+              },
+              {
+                "category": "typography",
+                "severity": "suggestion",
+                "location": "body copy throughout (desktop)",
+                "issue": "Body text appears smaller than 16px on desktop.",
+                "why_it_matters": "Reduces readability for users over 35 and on high-DPI screens.",
+                "fix": "Bump body to 16px / line-height 1.5; reserve 14px for captions only."
+              }
+            ],
+            "strengths": [
+              "Page rendered without errors and the screenshot was captured cleanly.",
+              "Layout fits within the target viewport without horizontal scroll."
+            ],
+            "viewport": "desktop"
+          }
+        }
+      ],
+      "total_expected": 10,
+      "total_detected": 1,
+      "recall": 0.1,
+      "control_violations": 0,
+      "passing": false,
+      "failure_reason": "recall 10.0% < required 80% (1/10 labeled signals detected)"
+    }
+  ],
+  "highest_passing_level": null,
+  "first_failing_level": "L1-basic",
+  "overall_passing": false,
+  "next_actions": [
+    {
+      "level": "L1-basic",
+      "fixture": "low-contrast-cta",
+      "ux_concept": "color-contrast WCAG AA",
+      "category": "contrast",
+      "severity": "warning",
+      "description": "Model failed to surface a warning-severity contrast/color finding on fixture \"low-contrast-cta\". Seeded fault: Primary CTA uses light gray text on a white background — clearly fails WCAG AA contrast (≥4.5:1).",
+      "expected_signal": "An issue with category ∈ {contrast, color}, severity ≥ warning, mentioning any of: cta, button, sign in, primary, contrast, wcag.",
+      "suggested_fix": "Tighten the system prompt for this UX dimension. Add an explicit checkpoint and one positive/negative example. If the dimension already has a checkpoint, raise its priority and require the model to evaluate it before producing the summary."
+    },
+    {
+      "level": "L1-basic",
+      "fixture": "tiny-body-text",
+      "ux_concept": "body-copy minimum size / readability",
+      "category": "typography",
+      "severity": "warning",
+      "description": "Model failed to surface a warning-severity typography finding on fixture \"tiny-body-text\". Seeded fault: Body copy rendered at 9px — far below the 16px sustained-reading threshold.",
+      "expected_signal": "An issue with category ∈ {typography}, severity ≥ warning, mentioning any of: body, text, size, small, legibil, readab.",
+      "suggested_fix": "Tighten the system prompt for this UX dimension. Add an explicit checkpoint and one positive/negative example. If the dimension already has a checkpoint, raise its priority and require the model to evaluate it before producing the summary."
+    },
+    {
+      "level": "L1-basic",
+      "fixture": "cramped-spacing",
+      "ux_concept": "Gestalt proximity, vertical rhythm, whitespace",
+      "category": "spacing",
+      "severity": "warning",
+      "description": "Model failed to surface a warning-severity spacing/alignment finding on fixture \"cramped-spacing\". Seeded fault: All padding and margin removed — content slammed together with zero breathing room.",
+      "expected_signal": "An issue with category ∈ {spacing, alignment}, severity ≥ warning, mentioning any of: spacing, padding, margin, cramp, breathing, whitespace.",
+      "suggested_fix": "Tighten the system prompt for this UX dimension. Add an explicit checkpoint and one positive/negative example. If the dimension already has a checkpoint, raise its priority and require the model to evaluate it before producing the summary."
+    },
+    {
+      "level": "L1-basic",
+      "fixture": "mobile-overflow",
+      "ux_concept": "responsive layout / horizontal overflow",
+      "category": "responsiveness",
+      "severity": "warning",
+      "description": "Model failed to surface a warning-severity responsiveness/spacing finding on fixture \"mobile-overflow\". Seeded fault: 1100px-wide pricing table forces horizontal scrolling on a 375px viewport.",
+      "expected_signal": "An issue with category ∈ {responsiveness, spacing}, severity ≥ warning, mentioning any of: overflow, scroll, horizontal, mobile, responsive, table.",
+      "suggested_fix": "Tighten the system prompt for this UX dimension. Add an explicit checkpoint and one positive/negative example. If the dimension already has a checkpoint, raise its priority and require the model to evaluate it before producing the summary."
+    },
+    {
+      "level": "L1-basic",
+      "fixture": "inconsistent-buttons",
+      "ux_concept": "design-system consistency",
+      "category": "consistency",
+      "severity": "warning",
+      "description": "Model failed to surface a warning-severity consistency/interaction finding on fixture \"inconsistent-buttons\". Seeded fault: Five identical 'Save' buttons rendered with five wildly different styles — no consistent button language.",
+      "expected_signal": "An issue with category ∈ {consistency, interaction}, severity ≥ warning, mentioning any of: button, consist, style, save, system, varied.",
+      "suggested_fix": "Tighten the system prompt for this UX dimension. Add an explicit checkpoint and one positive/negative example. If the dimension already has a checkpoint, raise its priority and require the model to evaluate it before producing the summary."
+    },
+    {
+      "level": "L1-basic",
+      "fixture": "unclear-cta-copy",
+      "ux_concept": "microcopy / actionable labels",
+      "category": "content",
+      "severity": "warning",
+      "description": "Model failed to surface a warning-severity content/interaction finding on fixture \"unclear-cta-copy\". Seeded fault: Every CTA label is generic ('Click here', 'Submit', 'OK') — no verb-object pairing.",
+      "expected_signal": "An issue with category ∈ {content, interaction}, severity ≥ warning, mentioning any of: click here, label, copy, vague, generic, verb.",
+      "suggested_fix": "Tighten the system prompt for this UX dimension. Add an explicit checkpoint and one positive/negative example. If the dimension already has a checkpoint, raise its priority and require the model to evaluate it before producing the summary."
+    },
+    {
+      "level": "L1-basic",
+      "fixture": "disabled-no-distinction",
+      "ux_concept": "interaction-state affordances",
+      "category": "interaction",
+      "severity": "warning",
+      "description": "Model failed to surface a warning-severity interaction/consistency/color finding on fixture \"disabled-no-distinction\". Seeded fault: Disabled buttons are styled identically to active buttons — no opacity, no greying, no cursor change.",
+      "expected_signal": "An issue with category ∈ {interaction, consistency, color}, severity ≥ warning, mentioning any of: disabled, state, active, distinguish, affordance, feedback.",
+      "suggested_fix": "Tighten the system prompt for this UX dimension. Add an explicit checkpoint and one positive/negative example. If the dimension already has a checkpoint, raise its priority and require the model to evaluate it before producing the summary."
+    },
+    {
+      "level": "L1-basic",
+      "fixture": "empty-state-missing",
+      "ux_concept": "empty state / first-run guidance",
+      "category": "loading_state",
+      "severity": "warning",
+      "description": "Model failed to surface a warning-severity loading_state/content/interaction finding on fixture \"empty-state-missing\". Seeded fault: Empty list with no empty-state message, illustration, or call to action — user lands on a blank box.",
+      "expected_signal": "An issue with category ∈ {loading_state, content, interaction}, severity ≥ warning, mentioning any of: empty, blank, placeholder, zero, starter, first run.",
+      "suggested_fix": "Tighten the system prompt for this UX dimension. Add an explicit checkpoint and one positive/negative example. If the dimension already has a checkpoint, raise its priority and require the model to evaluate it before producing the summary."
+    },
+    {
+      "level": "L1-basic",
+      "fixture": "tap-target-too-small",
+      "ux_concept": "Fitts's law / mobile tap target",
+      "category": "responsiveness",
+      "severity": "warning",
+      "description": "Model failed to surface a warning-severity responsiveness/interaction finding on fixture \"tap-target-too-small\". Seeded fault: Toolbar icons rendered at 18×18px and packed tightly together — far below the 48×48 mobile tap target (Fitts/Material).",
+      "expected_signal": "An issue with category ∈ {responsiveness, interaction}, severity ≥ warning, mentioning any of: tap, target, touch, small, icon, 48.",
+      "suggested_fix": "Tighten the system prompt for this UX dimension. Add an explicit checkpoint and one positive/negative example. If the dimension already has a checkpoint, raise its priority and require the model to evaluate it before producing the summary."
+    }
+  ]
+}

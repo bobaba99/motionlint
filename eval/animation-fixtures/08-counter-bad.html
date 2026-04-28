@@ -1,0 +1,19 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><title>Counter ramp — broken</title>
+<link rel="stylesheet" href="/anim/_base.css">
+<style>
+  /* SEEDED FAULT: number jumps from 0 to final value instantly. No ramp animation. */
+  .num { font-size: 72px; font-weight: 700; letter-spacing: -.02em; margin: 28px 0 8px; }
+</style></head>
+<body><main class="frame">
+  <h1>KPI counter</h1>
+  <p class="muted">Number snaps to final value with no ramp.</p>
+  <button class="btn" id="reveal">Reveal stats</button>
+  <div class="num" id="n">0</div>
+  <p class="muted">Reviews this week.</p>
+  <script>
+    document.getElementById('reveal').addEventListener('click', () => {
+      document.getElementById('n').textContent = (12480).toLocaleString();
+    });
+  </script>
+</main></body></html>

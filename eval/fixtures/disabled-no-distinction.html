@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Aurora — Invite</title>
+<link rel="stylesheet" href="/eval/_base.css">
+<style>
+  /* SEEDED FAULT: disabled buttons render identically to active ones — no opacity, no greying, no cursor change. */
+  button[disabled] { background: #2563eb; color: #fff; cursor: pointer; opacity: 1; }
+</style>
+</head>
+<body>
+<main class="frame">
+  <h1>Invite a teammate</h1>
+  <p class="muted">Send an invite once you’ve added an email below.</p>
+  <div class="section" style="max-width: 360px;">
+    <label for="e">Email</label>
+    <input id="e" type="email" placeholder="alex@aurora.dev">
+  </div>
+  <div class="row">
+    <button class="btn btn-primary" disabled>Send invite</button>
+    <button class="btn btn-secondary" disabled>Resend</button>
+    <button class="btn btn-primary" disabled>Save draft</button>
+    <button class="btn btn-primary">Cancel</button>
+  </div>
+  <p class="muted" style="margin-top: 12px;">Three of these buttons are disabled — can you tell which?</p>
+</main>
+</body>
+</html>

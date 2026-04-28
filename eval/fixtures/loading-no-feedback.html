@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Aurora — Search</title>
+<link rel="stylesheet" href="/eval/_base.css">
+<style>
+  /* L3 SEEDED FAULT (state-conditional): user submits a search; UI gives zero feedback.
+     The screenshot intentionally captures the "in-progress" empty state — the input has been
+     submitted but no spinner, skeleton, or message is shown. */
+  .search { display: flex; gap: 8px; max-width: 520px; }
+  .search input { flex: 1; padding: 10px 12px; border: 1px solid #d1d5db; border-radius: 8px; font-size: 16px; }
+  .results { margin-top: 24px; min-height: 280px; border: 1px solid #f3f4f6; border-radius: 12px; }
+  .results:empty::before { content: ""; }
+</style>
+</head>
+<body>
+<main class="frame">
+  <h1>Search reviews</h1>
+  <p class="muted">Type a URL or part of a project name.</p>
+  <div class="search">
+    <input value="aurora.dev/dashboard" autofocus>
+    <button class="btn btn-primary">Search</button>
+  </div>
+  <div class="results" aria-live="polite"></div>
+</main>
+</body>
+</html>

@@ -1,0 +1,17 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><title>Press feedback — broken</title>
+<link rel="stylesheet" href="/anim/_base.css">
+<style>
+  /* SEEDED FAULT: no :active style. Button looks identical when pressed —
+     no tactile feedback that the click was received. */
+  .pressable {
+    display: inline-block; padding: 16px 28px; margin-top: 40px;
+    background: var(--accent); color: #fff; border-radius: 12px;
+    font-weight: 600; font-size: 18px; cursor: pointer; border: 0;
+  }
+</style></head>
+<body><main class="frame">
+  <h1>Press feedback</h1>
+  <p class="muted">Click registers, but no visual feedback.</p>
+  <button class="pressable" id="press-me">Click me</button>
+</main></body></html>

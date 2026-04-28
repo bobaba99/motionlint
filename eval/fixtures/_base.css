@@ -1,0 +1,13 @@
+/* Shared minimal stylesheet for eval fixtures so we test ONE issue at a time. */
+:root { font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; }
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; min-height: 100vh; background: #ffffff; color: #111827; }
+.frame { max-width: 980px; margin: 0 auto; padding: 48px 24px; }
+.btn { display: inline-block; padding: 12px 22px; border-radius: 10px; border: 1px solid transparent; font-weight: 600; font-size: 16px; cursor: pointer; }
+.btn-primary { background: #2563eb; color: #ffffff; }
+.btn-secondary { background: #f3f4f6; color: #111827; border-color: #e5e7eb; }
+.muted { color: #6b7280; }
+.section { margin: 32px 0; }
+hr { border: 0; border-top: 1px solid #e5e7eb; margin: 24px 0; }
+input, textarea { font: inherit; padding: 10px 12px; border: 1px solid #d1d5db; border-radius: 8px; width: 100%; }
+.row { display: flex; gap: 14px; align-items: center; flex-wrap: wrap; }

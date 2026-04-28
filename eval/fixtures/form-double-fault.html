@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Aurora — Add team member</title>
+<link rel="stylesheet" href="/eval/_base.css">
+<style>
+  /* SEEDED FAULT 1: required fields have NO indicator — no asterisk, no "(required)" tag, no "Required" label.
+     SEEDED FAULT 2: Submit and Cancel buttons styled identically — destructive vs primary action ambiguous. */
+  .field { margin-bottom: 14px; max-width: 420px; }
+  .field label { font-size: 14px; font-weight: 500; }
+  .actions .btn { background: #2563eb; color: #fff; padding: 10px 18px; border-radius: 8px; border: 0; font-size: 15px; font-weight: 600; }
+</style>
+</head>
+<body>
+<main class="frame">
+  <h1 style="margin: 0 0 6px;">Add team member</h1>
+  <p class="muted" style="margin: 0 0 24px;">Fields marked with no asterisk are still required — but you wouldn’t know that from the UI.</p>
+  <form>
+    <div class="field"><label for="n">Full name</label><input id="n" type="text"></div>
+    <div class="field"><label for="e">Email</label><input id="e" type="email"></div>
+    <div class="field"><label for="r">Role</label>
+      <select id="r"><option value="">Pick one</option><option>Engineer</option><option>Designer</option><option>Manager</option></select>
+    </div>
+    <div class="field"><label for="b">Notes (optional)</label><textarea id="b" rows="3"></textarea></div>
+    <div class="row actions">
+      <button class="btn" type="button">Cancel</button>
+      <button class="btn" type="submit">Save</button>
+    </div>
+  </form>
+</main>
+</body>
+</html>

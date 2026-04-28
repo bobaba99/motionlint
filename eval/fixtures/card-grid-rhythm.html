@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Aurora — Templates</title>
+<link rel="stylesheet" href="/eval/_base.css">
+<style>
+  /* SEEDED FAULT 1: grid alternates 3 and 4 columns randomly across rows.
+     SEEDED FAULT 2: cards use three different border-radii (4px, 16px, 32px) without a system. */
+  .grid-a { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; margin-bottom: 14px; }
+  .grid-b { display: grid; grid-template-columns: repeat(4, 1fr); gap: 18px; margin-bottom: 14px; }
+  .card { background: #ffffff; border: 1px solid #e5e7eb; padding: 18px; }
+  .card.r1 { border-radius: 4px; }
+  .card.r2 { border-radius: 16px; }
+  .card.r3 { border-radius: 32px; }
+  .card h3 { margin: 0 0 4px; font-size: 16px; }
+  .card p { margin: 0; color: #6b7280; font-size: 14px; }
+</style>
+</head>
+<body>
+<main class="frame">
+  <h1>Templates</h1>
+  <p class="muted">Start from a template — pick one and clone it.</p>
+
+  <div class="grid-a">
+    <div class="card r1"><h3>Landing</h3><p>Marketing-first landing page.</p></div>
+    <div class="card r2"><h3>Dashboard</h3><p>Operational analytics dashboard.</p></div>
+    <div class="card r3"><h3>Pricing</h3><p>3-tier pricing page.</p></div>
+  </div>
+
+  <div class="grid-b">
+    <div class="card r3"><h3>Docs</h3><p>Developer documentation.</p></div>
+    <div class="card r1"><h3>Changelog</h3><p>Versioned release notes.</p></div>
+    <div class="card r2"><h3>Blog</h3><p>Long-form articles.</p></div>
+    <div class="card r3"><h3>Status</h3><p>Service uptime page.</p></div>
+  </div>
+
+  <div class="grid-a">
+    <div class="card r2"><h3>Login</h3><p>Auth screens.</p></div>
+    <div class="card r3"><h3>Onboarding</h3><p>First-run tour.</p></div>
+    <div class="card r1"><h3>Settings</h3><p>Account & billing.</p></div>
+  </div>
+</main>
+</body>
+</html>

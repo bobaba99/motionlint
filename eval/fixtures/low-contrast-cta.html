@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Sign in</title>
+<link rel="stylesheet" href="/eval/_base.css">
+<style>
+  /* SEEDED FAULT: extremely low contrast on the primary CTA — light gray text on white background. */
+  .btn-primary { background: #ffffff; color: #d1d5db; border: 1px solid #f3f4f6; }
+  .btn-primary:hover { background: #f9fafb; }
+</style>
+</head>
+<body>
+<main class="frame">
+  <h1 style="font-size: 32px; margin: 0 0 12px;">Welcome back</h1>
+  <p class="muted" style="margin: 0 0 28px;">Sign in to your Aurora account.</p>
+  <div class="section">
+    <label for="e">Email</label>
+    <input id="e" type="email" placeholder="you@company.com">
+  </div>
+  <div class="section">
+    <label for="p">Password</label>
+    <input id="p" type="password" placeholder="••••••••">
+  </div>
+  <div class="row">
+    <button class="btn btn-primary">Sign in</button>
+    <a href="#" style="color:#2563eb;">Forgot password?</a>
+  </div>
+</main>
+</body>
+</html>

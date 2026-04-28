@@ -1,0 +1,344 @@
+{
+  "$schema": "https://motionlint.dev/eval-schema.json",
+  "version": "1.1",
+  "description": "Labeled UI/UX fixtures organized by complexity level. The vision model never sees these labels — they are the answer key for blind precision/recall scoring.",
+  "terminology": {
+    "recall": "fraction of labeled (seeded) issues the model correctly identified",
+    "precision_proxy": "fraction of model-raised issues that align with a labeled expectation; surplus = surprise issues",
+    "control_violation": "control-fixture (deliberately clean page) was flagged with critical or excess warning issues",
+    "wcag_aa_text_contrast": "4.5:1 for normal text, 3:1 for large (>=18pt or 14pt bold)",
+    "fitts_tap_target_minimum": "48x48 CSS px (Material) / 44x44 (Apple HIG)",
+    "body_copy_minimum": "16px / 1.5 line-height for sustained reading",
+    "line_length_optimal": "45-75 characters per line"
+  },
+  "levels": [
+    {
+      "name": "L1-basic",
+      "summary": "One isolated, glaringly obvious seeded fault per fixture. A competent vision model should detect every fault.",
+      "thresholds": { "min_recall": 0.8, "max_control_violations": 0 },
+      "fixtures": [
+        {
+          "name": "low-contrast-cta",
+          "url": "/eval/low-contrast-cta",
+          "viewports": ["desktop"],
+          "label": "Primary CTA uses light gray text on a white background — clearly fails WCAG AA contrast (≥4.5:1).",
+          "ux_concept": "color-contrast WCAG AA",
+          "expected_issues": [
+            {
+              "categories": ["contrast", "color"],
+              "min_severity": "warning",
+              "any_keywords": ["cta", "button", "sign in", "primary", "contrast", "wcag"]
+            }
+          ]
+        },
+        {
+          "name": "tiny-body-text",
+          "url": "/eval/tiny-body-text",
+          "viewports": ["desktop"],
+          "label": "Body copy rendered at 9px — far below the 16px sustained-reading threshold.",
+          "ux_concept": "body-copy minimum size / readability",
+          "expected_issues": [
+            {
+              "categories": ["typography"],
+              "min_severity": "warning",
+              "any_keywords": ["body", "text", "size", "small", "legibil", "readab", "px"]
+            }
+          ]
+        },
+        {
+          "name": "cramped-spacing",
+          "url": "/eval/cramped-spacing",
+          "viewports": ["desktop"],
+          "label": "All padding and margin removed — content slammed together with zero breathing room.",
+          "ux_concept": "Gestalt proximity, vertical rhythm, whitespace",
+          "expected_issues": [
+            {
+              "categories": ["spacing", "alignment"],
+              "min_severity": "warning",
+              "any_keywords": ["spacing", "padding", "margin", "cramp", "breathing", "whitespace", "gap"]
+            }
+          ]
+        },
+        {
+          "name": "weak-hierarchy",
+          "url": "/eval/weak-hierarchy",
+          "viewports": ["desktop"],
+          "label": "H1, H2, and H3 are all the same size and weight — no visual hierarchy.",
+          "ux_concept": "type scale / typographic hierarchy",
+          "expected_issues": [
+            {
+              "categories": ["hierarchy", "typography"],
+              "min_severity": "warning",
+              "any_keywords": ["hierarchy", "heading", "h1", "h2", "h3", "size", "scan", "structure"]
+            }
+          ]
+        },
+        {
+          "name": "mobile-overflow",
+          "url": "/eval/mobile-overflow",
+          "viewports": ["mobile"],
+          "label": "1100px-wide pricing table forces horizontal scrolling on a 375px viewport.",
+          "ux_concept": "responsive layout / horizontal overflow",
+          "expected_issues": [
+            {
+              "categories": ["responsiveness", "spacing"],
+              "min_severity": "warning",
+              "any_keywords": ["overflow", "scroll", "horizontal", "mobile", "responsive", "table", "viewport"]
+            }
+          ]
+        },
+        {
+          "name": "inconsistent-buttons",
+          "url": "/eval/inconsistent-buttons",
+          "viewports": ["desktop"],
+          "label": "Five identical 'Save' buttons rendered with five wildly different styles — no consistent button language.",
+          "ux_concept": "design-system consistency",
+          "expected_issues": [
+            {
+              "categories": ["consistency", "interaction"],
+              "min_severity": "warning",
+              "any_keywords": ["button", "consist", "style", "save", "system", "varied", "different"]
+            }
+          ]
+        },
+        {
+          "name": "unclear-cta-copy",
+          "url": "/eval/unclear-cta-copy",
+          "viewports": ["desktop"],
+          "label": "Every CTA label is generic ('Click here', 'Submit', 'OK') — no verb-object pairing.",
+          "ux_concept": "microcopy / actionable labels",
+          "expected_issues": [
+            {
+              "categories": ["content", "interaction"],
+              "min_severity": "warning",
+              "any_keywords": ["click here", "label", "copy", "vague", "generic", "verb", "submit", "ok", "ambiguous", "unclear"]
+            }
+          ]
+        },
+        {
+          "name": "disabled-no-distinction",
+          "url": "/eval/disabled-no-distinction",
+          "viewports": ["desktop"],
+          "label": "Disabled buttons are styled identically to active buttons — no opacity, no greying, no cursor change.",
+          "ux_concept": "interaction-state affordances",
+          "expected_issues": [
+            {
+              "categories": ["interaction", "consistency", "color"],
+              "min_severity": "warning",
+              "any_keywords": ["disabled", "state", "active", "distinguish", "affordance", "feedback", "indicate"]
+            }
+          ]
+        },
+        {
+          "name": "empty-state-missing",
+          "url": "/eval/empty-state-missing",
+          "viewports": ["desktop"],
+          "label": "Empty list with no empty-state message, illustration, or call to action — user lands on a blank box.",
+          "ux_concept": "empty state / first-run guidance",
+          "expected_issues": [
+            {
+              "categories": ["loading_state", "content", "interaction"],
+              "min_severity": "warning",
+              "any_keywords": ["empty", "blank", "placeholder", "zero", "starter", "first run", "no data", "guidance"]
+            }
+          ]
+        },
+        {
+          "name": "tap-target-too-small",
+          "url": "/eval/tap-target-too-small",
+          "viewports": ["mobile"],
+          "label": "Toolbar icons rendered at 18×18px and packed tightly together — far below the 48×48 mobile tap target (Fitts/Material).",
+          "ux_concept": "Fitts's law / mobile tap target",
+          "expected_issues": [
+            {
+              "categories": ["responsiveness", "interaction"],
+              "min_severity": "warning",
+              "any_keywords": ["tap", "target", "touch", "small", "icon", "48", "44", "size", "mobile"]
+            }
+          ]
+        },
+        {
+          "name": "clean-control",
+          "url": "/eval/clean-control",
+          "viewports": ["desktop"],
+          "label": "Deliberately well-designed control page. The vision model should NOT raise critical issues here.",
+          "ux_concept": "control / true-negative",
+          "expected_issues": [],
+          "max_critical_issues": 0,
+          "max_warning_issues": 2
+        }
+      ]
+    },
+    {
+      "name": "L2-intermediate",
+      "summary": "Two-to-three subtler co-occurring issues per fixture. Tests whether the model can disentangle concurrent UX problems on a realistic-looking page.",
+      "thresholds": { "min_recall": 0.6, "max_control_violations": 0 },
+      "fixtures": [
+        {
+          "name": "form-double-fault",
+          "url": "/eval/form-double-fault",
+          "viewports": ["desktop"],
+          "label": "Required-field labels are missing AND submit/cancel buttons share identical styling so destructive action is ambiguous.",
+          "ux_concept": "form labels + destructive-action affordance",
+          "expected_issues": [
+            {
+              "categories": ["content", "consistency"],
+              "min_severity": "warning",
+              "any_keywords": ["required", "label", "indicator", "asterisk", "field"]
+            },
+            {
+              "categories": ["interaction", "consistency", "color"],
+              "min_severity": "warning",
+              "any_keywords": ["destructive", "cancel", "delete", "danger", "primary", "secondary", "differentiate"]
+            }
+          ]
+        },
+        {
+          "name": "card-grid-rhythm",
+          "url": "/eval/card-grid-rhythm",
+          "viewports": ["desktop"],
+          "label": "Card grid mixes 3-column and 4-column rhythm randomly AND uses three different card border-radii. Both reduce perceived polish.",
+          "ux_concept": "rhythm / grid system / corner-radius consistency",
+          "expected_issues": [
+            {
+              "categories": ["alignment", "consistency", "spacing"],
+              "min_severity": "warning",
+              "any_keywords": ["grid", "rhythm", "column", "align", "uneven", "inconsistent"]
+            },
+            {
+              "categories": ["consistency", "alignment"],
+              "min_severity": "suggestion",
+              "any_keywords": ["radius", "corner", "rounded", "shape", "card"]
+            }
+          ]
+        },
+        {
+          "name": "long-line-prose",
+          "url": "/eval/long-line-prose",
+          "viewports": ["desktop"],
+          "label": "Body prose extends to ~120 characters per line (above 45–75 optimal) AND headings are visually heavier than the brand wordmark in the nav.",
+          "ux_concept": "measure / line length + brand hierarchy",
+          "expected_issues": [
+            {
+              "categories": ["typography", "content"],
+              "min_severity": "warning",
+              "any_keywords": ["line length", "measure", "characters", "wide", "narrow", "max-width", "75"]
+            },
+            {
+              "categories": ["hierarchy", "navigation", "consistency"],
+              "min_severity": "suggestion",
+              "any_keywords": ["brand", "logo", "wordmark", "nav", "heavier", "compete"]
+            }
+          ]
+        },
+        {
+          "name": "icon-only-nav",
+          "url": "/eval/icon-only-nav",
+          "viewports": ["desktop"],
+          "label": "Top nav uses only icons (no text labels and no tooltips visible) AND the active item is highlighted with a 1px underline that's hard to perceive.",
+          "ux_concept": "icon recognition / active-state visibility",
+          "expected_issues": [
+            {
+              "categories": ["navigation", "content", "interaction"],
+              "min_severity": "warning",
+              "any_keywords": ["icon", "label", "tooltip", "ambiguous", "discover"]
+            },
+            {
+              "categories": ["interaction", "color", "hierarchy"],
+              "min_severity": "warning",
+              "any_keywords": ["active", "current", "selected", "indicator", "underline"]
+            }
+          ]
+        },
+        {
+          "name": "modal-trap",
+          "url": "/eval/modal-trap",
+          "viewports": ["desktop"],
+          "label": "Confirm-delete modal has no visible 'Cancel' affordance (only an 'X' icon top-right) AND the destructive button looks identical to the safe one.",
+          "ux_concept": "destructive-action escape hatch",
+          "expected_issues": [
+            {
+              "categories": ["interaction", "navigation", "content"],
+              "min_severity": "warning",
+              "any_keywords": ["cancel", "close", "escape", "dismiss", "back"]
+            },
+            {
+              "categories": ["interaction", "color", "consistency"],
+              "min_severity": "warning",
+              "any_keywords": ["destructive", "danger", "delete", "primary", "differentiate"]
+            }
+          ]
+        },
+        {
+          "name": "control-portfolio",
+          "url": "/eval/control-portfolio",
+          "viewports": ["desktop"],
+          "label": "Realistic, well-designed portfolio landing page. Should produce zero critical issues and at most 3 warnings.",
+          "ux_concept": "L2 control / true-negative",
+          "expected_issues": [],
+          "max_critical_issues": 0,
+          "max_warning_issues": 3
+        }
+      ]
+    },
+    {
+      "name": "L3-realistic",
+      "summary": "Realistic production-style pages where the seeded fault is conditional, viewport-dependent, or interaction-state-dependent.",
+      "thresholds": { "min_recall": 0.5, "max_control_violations": 1 },
+      "fixtures": [
+        {
+          "name": "mobile-only-nav-collision",
+          "url": "/eval/mobile-only-nav-collision",
+          "viewports": ["mobile"],
+          "label": "On 375px the sticky bottom CTA bar overlaps the lowest interactive form field. Desktop renders fine — only visible at mobile viewport.",
+          "ux_concept": "viewport-conditional overlap",
+          "expected_issues": [
+            {
+              "categories": ["responsiveness", "spacing", "interaction"],
+              "min_severity": "warning",
+              "any_keywords": ["overlap", "cover", "obscur", "collide", "bottom", "sticky", "fixed"]
+            }
+          ]
+        },
+        {
+          "name": "loading-no-feedback",
+          "url": "/eval/loading-no-feedback",
+          "viewports": ["desktop"],
+          "label": "After clicking 'Search', the UI shows no spinner, no skeleton, no text — user has no signal that something is happening for ~2s.",
+          "ux_concept": "perceived performance / loading feedback",
+          "expected_issues": [
+            {
+              "categories": ["loading_state", "interaction", "content"],
+              "min_severity": "warning",
+              "any_keywords": ["loading", "spinner", "skeleton", "feedback", "progress", "indicator", "wait"]
+            }
+          ]
+        },
+        {
+          "name": "dense-dashboard",
+          "url": "/eval/dense-dashboard",
+          "viewports": ["desktop"],
+          "label": "Dashboard packs 18 KPI tiles, two charts, and a 12-column table into a single screen. No visual hierarchy directs the eye to the most important signal.",
+          "ux_concept": "information density / visual hierarchy",
+          "expected_issues": [
+            {
+              "categories": ["hierarchy", "spacing", "content"],
+              "min_severity": "warning",
+              "any_keywords": ["dense", "overwhelm", "hierarchy", "cluster", "primary", "scan", "focus"]
+            }
+          ]
+        },
+        {
+          "name": "control-realistic",
+          "url": "/eval/control-realistic",
+          "viewports": ["desktop"],
+          "label": "Realistic, well-designed dashboard with one intentional minor improvement opportunity. Zero critical, ≤4 warnings.",
+          "ux_concept": "L3 control / true-negative",
+          "expected_issues": [],
+          "max_critical_issues": 0,
+          "max_warning_issues": 4
+        }
+      ]
+    }
+  ]
+}

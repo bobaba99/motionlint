@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Aurora — Projects</title>
+<link rel="stylesheet" href="/eval/_base.css">
+<style>
+  /* SEEDED FAULT: an empty list with NO empty-state message, NO illustration, NO CTA — user sees a blank page. */
+  .list { border: 1px solid #e5e7eb; border-radius: 12px; min-height: 320px; }
+  .list:empty::before { content: ""; }
+</style>
+</head>
+<body>
+<main class="frame">
+  <div class="row" style="justify-content: space-between;">
+    <h1 style="margin: 0;">Projects</h1>
+    <button class="btn btn-secondary">⋯</button>
+  </div>
+  <hr>
+  <div class="list" aria-label="projects"></div>
+</main>
+</body>
+</html>

@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Aurora — Ops dashboard</title>
+<link rel="stylesheet" href="/eval/_base.css">
+<style>
+  /* L3 SEEDED FAULT: 18 KPI tiles + 2 charts + a 12-column table on one screen with no clear primary signal. */
+  body { font-size: 13px; }
+  .frame { padding: 16px; max-width: none; }
+  .kpis { display: grid; grid-template-columns: repeat(6, 1fr); gap: 8px; margin-bottom: 12px; }
+  .kpi { background: #fff; border: 1px solid #e5e7eb; border-radius: 6px; padding: 10px 12px; }
+  .kpi .l { color: #6b7280; font-size: 11px; text-transform: uppercase; letter-spacing: .08em; }
+  .kpi .v { font-size: 18px; font-weight: 600; }
+  .kpi .d { font-size: 11px; color: #16a34a; }
+  .charts { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 12px; }
+  .chart { background: #fff; border: 1px solid #e5e7eb; border-radius: 6px; padding: 10px; height: 180px; }
+  table { width: 100%; border-collapse: collapse; font-size: 12px; }
+  th, td { padding: 6px 8px; border-bottom: 1px solid #f3f4f6; text-align: left; white-space: nowrap; }
+  th { background: #f9fafb; font-weight: 600; }
+</style>
+</head>
+<body>
+<main class="frame">
+  <div class="kpis">
+    <div class="kpi"><div class="l">Reviews</div><div class="v">1,248</div><div class="d">+3.2%</div></div>
+    <div class="kpi"><div class="l">Critical</div><div class="v">37</div><div class="d">+1.1%</div></div>
+    <div class="kpi"><div class="l">Warning</div><div class="v">214</div><div class="d">+0.4%</div></div>
+    <div class="kpi"><div class="l">Suggestion</div><div class="v">980</div><div class="d">+2.6%</div></div>
+    <div class="kpi"><div class="l">Score (avg)</div><div class="v">81/100</div><div class="d">+0.3</div></div>
+    <div class="kpi"><div class="l">P95 latency</div><div class="v">2.4s</div><div class="d">−0.2s</div></div>
+    <div class="kpi"><div class="l">Captures</div><div class="v">3,940</div><div class="d">+5.8%</div></div>
+    <div class="kpi"><div class="l">Tokens</div><div class="v">8.4M</div><div class="d">+1.2%</div></div>
+    <div class="kpi"><div class="l">Cost</div><div class="v">$382</div><div class="d">+0.8%</div></div>
+    <div class="kpi"><div class="l">MRR</div><div class="v">$14.8K</div><div class="d">+8.1%</div></div>
+    <div class="kpi"><div class="l">DAU</div><div class="v">312</div><div class="d">+1.6%</div></div>
+    <div class="kpi"><div class="l">WAU</div><div class="v">1,408</div><div class="d">+1.1%</div></div>
+    <div class="kpi"><div class="l">Conv.</div><div class="v">12.8%</div><div class="d">+0.4%</div></div>
+    <div class="kpi"><div class="l">Churn</div><div class="v">1.4%</div><div class="d">+0.1%</div></div>
+    <div class="kpi"><div class="l">Errors</div><div class="v">17</div><div class="d">−2</div></div>
+    <div class="kpi"><div class="l">Uptime</div><div class="v">99.97%</div><div class="d">flat</div></div>
+    <div class="kpi"><div class="l">Queue</div><div class="v">42</div><div class="d">−3</div></div>
+    <div class="kpi"><div class="l">Build</div><div class="v">114s</div><div class="d">−4s</div></div>
+  </div>
+  <div class="charts">
+    <div class="chart"><b>Reviews / day</b><br><span class="muted">last 30 days</span></div>
+    <div class="chart"><b>Issues by category</b><br><span class="muted">last 30 days</span></div>
+  </div>
+  <table>
+    <thead><tr>
+      <th>Project</th><th>Captures</th><th>Score</th><th>Crit</th><th>Warn</th><th>Sugg</th>
+      <th>Latency</th><th>Cost</th><th>Tokens</th><th>Uptime</th><th>Owner</th><th>Updated</th>
+    </tr></thead>
+    <tbody>
+      <tr><td>aurora.dev</td><td>248</td><td>92</td><td>1</td><td>4</td><td>11</td><td>2.1s</td><td>$24</td><td>140K</td><td>99.99%</td><td>Maya</td><td>2m</td></tr>
+      <tr><td>linnea.bank</td><td>192</td><td>85</td><td>3</td><td>9</td><td>27</td><td>2.6s</td><td>$31</td><td>180K</td><td>99.95%</td><td>Jonas</td><td>17m</td></tr>
+      <tr><td>boreal.io</td><td>308</td><td>78</td><td>5</td><td>12</td><td>40</td><td>2.3s</td><td>$44</td><td>220K</td><td>99.97%</td><td>Aria</td><td>1h</td></tr>
+      <tr><td>atelier-coffee</td><td>92</td><td>88</td><td>2</td><td>5</td><td>14</td><td>2.0s</td><td>$12</td><td>60K</td><td>99.99%</td><td>Maya</td><td>3h</td></tr>
+      <tr><td>ledger.app</td><td>164</td><td>74</td><td>6</td><td>16</td><td>52</td><td>2.5s</td><td>$28</td><td>200K</td><td>99.94%</td><td>Jonas</td><td>1d</td></tr>
+    </tbody>
+  </table>
+</main>
+</body>
+</html>

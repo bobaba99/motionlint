@@ -1,0 +1,20 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><title>Stagger entrance — broken</title>
+<link rel="stylesheet" href="/anim/_base.css">
+<style>
+  /* SEEDED FAULT: cards pop in instantly with no entrance animation. */
+  .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-top: 24px; }
+  .card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 22px; }
+</style></head>
+<body><main class="frame">
+  <h1>Pricing</h1>
+  <p class="muted">Six cards.</p>
+  <div class="grid">
+    <article class="card"><h3>Hobby</h3><p>$0/mo</p></article>
+    <article class="card"><h3>Starter</h3><p>$9/mo</p></article>
+    <article class="card"><h3>Team</h3><p>$29/mo</p></article>
+    <article class="card"><h3>Business</h3><p>$99/mo</p></article>
+    <article class="card"><h3>Enterprise</h3><p>Custom</p></article>
+    <article class="card"><h3>Free trial</h3><p>14 days</p></article>
+  </div>
+</main></body></html>

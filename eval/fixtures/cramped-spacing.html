@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Aurora — Features</title>
+<link rel="stylesheet" href="/eval/_base.css">
+<style>
+  /* SEEDED FAULT: zero margin/padding everywhere — content slammed together with no breathing room. */
+  .frame { padding: 0 !important; max-width: 100% !important; }
+  h1, h2, h3, p, ul, li, .row, .section, hr { margin: 0 !important; padding: 0 !important; }
+  ul { list-style-position: inside; }
+  hr { display: none; }
+  .grid { display: grid; grid-template-columns: repeat(3, 1fr); }
+  .card { padding: 0 !important; border: 1px solid #e5e7eb; }
+</style>
+</head>
+<body>
+<main class="frame">
+  <h1>Features that ship.</h1>
+  <p>Everything you need to deliver polished interfaces, in one toolkit.</p>
+  <div class="grid">
+    <div class="card"><h3>Spring transitions</h3><p>Physics-based motion with sane defaults.</p></div>
+    <div class="card"><h3>Stagger orchestration</h3><p>Choreograph entry sequences across lists.</p></div>
+    <div class="card"><h3>Scroll scenes</h3><p>Tie any property to scroll progress.</p></div>
+    <div class="card"><h3>Auto-animate</h3><p>List inserts/removes glide instead of jump.</p></div>
+    <div class="card"><h3>Gestures</h3><p>Drag, pinch, swipe with momentum.</p></div>
+    <div class="card"><h3>Lottie</h3><p>Render After Effects timelines next to your components.</p></div>
+  </div>
+  <h2>Get started</h2>
+  <p>Install the SDK and import the primitives.</p>
+  <pre>npm install @aurora/motion</pre>
+  <button class="btn btn-primary">Read the docs</button>
+</main>
+</body>
+</html>

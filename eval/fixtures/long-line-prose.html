@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Aurora — Manifesto</title>
+<link rel="stylesheet" href="/eval/_base.css">
+<style>
+  /* SEEDED FAULT 1: prose extends edge-to-edge (~120ch line length, well above 45-75 optimal).
+     SEEDED FAULT 2: page heading is visually heavier (32px / 800) than the brand wordmark (16px / 500) in the nav. */
+  .nav { padding: 14px 24px; border-bottom: 1px solid #e5e7eb; }
+  .nav .brand { font-size: 16px; font-weight: 500; color: #6b7280; }
+  .frame { max-width: none; padding: 24px; }
+  h1.page-title { font-size: 32px; font-weight: 800; }
+  p { font-size: 18px; line-height: 1.8; max-width: none; }
+</style>
+</head>
+<body>
+<header class="nav">
+  <div class="brand">aurora</div>
+</header>
+<main class="frame">
+  <h1 class="page-title">Why polish matters</h1>
+  <p>The web is full of products that work but feel cheap. We believe interaction quality is a competitive moat — when two tools do the same job, the polished one wins, every time, even when it costs more, because polish signals respect for the user’s time and attention. That is why we obsess over motion, density, rhythm, and the dozen other variables a product has to get right before users notice them, and why we built Aurora as an opinionated set of motion primitives instead of a kitchen-sink animation library that ships unopinionated defaults and pushes the design decisions onto every team using it.</p>
+  <p>Most teams ship without a designer in the room. They are not lazy — they are constrained. Aurora exists for them: a TypeScript-first toolkit that bakes in tasteful defaults so the median ticket reads less like “make it pop” and more like “drop in the spring preset and ship,” which is what we believe motion APIs ought to feel like at this point in the maturity curve of frontend tooling, after a decade of CSS-only animations, jQuery plugins, GSAP timelines, Framer Motion declarative components, and now the converging pattern of TS-first composable primitives.</p>
+</main>
+</body>
+</html>

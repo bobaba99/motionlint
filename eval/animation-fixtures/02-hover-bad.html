@@ -1,0 +1,16 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><title>Hover state — broken</title>
+<link rel="stylesheet" href="/anim/_base.css">
+<style>
+  /* SEEDED FAULT: no hover state at all. Button looks identical regardless of cursor. */
+  .target {
+    display: inline-block; padding: 16px 28px; margin-top: 40px;
+    background: var(--accent); color: #fff; border-radius: 12px;
+    font-weight: 600; font-size: 18px; cursor: pointer;
+  }
+</style></head>
+<body><main class="frame">
+  <h1>Hover the button</h1>
+  <p class="muted">No hover feedback at all.</p>
+  <button class="target" id="hover-me">Hover me</button>
+</main></body></html>

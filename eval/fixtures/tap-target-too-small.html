@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Aurora — Mobile menu</title>
+<link rel="stylesheet" href="/eval/_base.css">
+<style>
+  /* SEEDED FAULT: mobile nav with 18×18px tap targets packed tightly together — well below 48×48 minimum. */
+  .iconbar { display: flex; gap: 4px; padding: 8px; background: #f9fafb; border-bottom: 1px solid #e5e7eb; }
+  .iconbar button {
+    width: 18px; height: 18px; padding: 0;
+    background: transparent; border: 0; cursor: pointer;
+    font-size: 10px; line-height: 18px; text-align: center; color: #374151;
+  }
+</style>
+</head>
+<body>
+<div class="iconbar" role="toolbar" aria-label="primary">
+  <button title="Home">⌂</button>
+  <button title="Search">⌕</button>
+  <button title="Messages">✉</button>
+  <button title="Notifications">⚐</button>
+  <button title="Saved">★</button>
+  <button title="Settings">⚙</button>
+  <button title="Help">?</button>
+  <button title="Profile">●</button>
+</div>
+<main class="frame" style="padding: 16px;">
+  <h1>Inbox</h1>
+  <p class="muted">Tap the icons in the toolbar above to switch sections.</p>
+</main>
+</body>
+</html>

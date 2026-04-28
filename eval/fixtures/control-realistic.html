@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Aurora — Reviews</title>
+<link rel="stylesheet" href="/eval/_base.css">
+<style>
+  /* L3 control: realistic dashboard with one minor improvement opportunity. Should not raise critical issues. */
+  body { background: #f8fafc; color: #0f172a; }
+  .frame { padding: 28px 28px 60px; max-width: 1200px; }
+  .head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 18px; }
+  .head h1 { margin: 0; font-size: 22px; letter-spacing: -.01em; }
+  .grid { display: grid; grid-template-columns: 280px 1fr; gap: 24px; }
+  .side { background: #fff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 12px; height: fit-content; }
+  .side a { display: block; padding: 8px 12px; border-radius: 8px; color: #475569; font-size: 14.5px; }
+  .side a.active { background: #eff6ff; color: #1d4ed8; font-weight: 600; }
+  .kpis { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-bottom: 18px; }
+  .kpi { background: #fff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 16px 18px; }
+  .kpi .l { color: #64748b; font-size: 12.5px; text-transform: uppercase; letter-spacing: .12em; }
+  .kpi .v { font-size: 28px; font-weight: 700; margin: 4px 0; letter-spacing: -.02em; }
+  .kpi .d { font-size: 13px; color: #16a34a; }
+  .panel { background: #fff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 18px 18px 22px; margin-bottom: 16px; }
+  .panel h3 { margin: 0 0 12px; font-size: 15px; color: #0f172a; }
+  table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  th, td { padding: 10px 8px; border-bottom: 1px solid #f1f5f9; text-align: left; }
+  th { color: #64748b; font-weight: 500; font-size: 12.5px; letter-spacing: .08em; text-transform: uppercase; }
+  .btn-primary { background: #1d4ed8; color: #fff; }
+  .btn-secondary { background: #fff; border-color: #cbd5e1; color: #0f172a; }
+</style>
+</head>
+<body>
+<main class="frame">
+  <div class="head">
+    <h1>Reviews</h1>
+    <div class="row"><a class="btn btn-secondary" href="#">Export</a><a class="btn btn-primary" href="#">New review</a></div>
+  </div>
+  <div class="grid">
+    <aside class="side">
+      <a class="active" href="#">All reviews</a>
+      <a href="#">Pinned</a>
+      <a href="#">Failing</a>
+      <a href="#">By owner</a>
+      <a href="#">Settings</a>
+    </aside>
+    <section>
+      <div class="kpis">
+        <div class="kpi"><div class="l">Reviews</div><div class="v">248</div><div class="d">+12.4% vs last week</div></div>
+        <div class="kpi"><div class="l">Average score</div><div class="v">82/100</div><div class="d">+4 points</div></div>
+        <div class="kpi"><div class="l">Critical issues</div><div class="v">11</div><div class="d">−3 vs last week</div></div>
+      </div>
+      <div class="panel">
+        <h3>Recent reviews</h3>
+        <table>
+          <thead><tr><th>Project</th><th>URL</th><th>Score</th><th>Owner</th><th>Updated</th></tr></thead>
+          <tbody>
+            <tr><td>Aurora</td><td>aurora.dev/</td><td>92</td><td>Maya</td><td>2m ago</td></tr>
+            <tr><td>Aurora</td><td>aurora.dev/pricing</td><td>78</td><td>Maya</td><td>17m ago</td></tr>
+            <tr><td>Linnea</td><td>linnea.bank/login</td><td>85</td><td>Jonas</td><td>1h ago</td></tr>
+            <tr><td>Boreal</td><td>boreal.io/onboarding</td><td>74</td><td>Aria</td><td>3h ago</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+  </div>
+</main>
+</body>
+</html>

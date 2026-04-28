@@ -1,0 +1,154 @@
+{
+  "$schema": "motionlint animation stress-test definition",
+  "description": "8 popular web animation patterns × 2 variants (good/broken). Each pattern's flow spec drives the interaction that triggers the animation. The vision LLM is graded on whether it correctly identifies the seeded fault on the broken variant AND avoids hallucinating issues on the good variant.",
+  "patterns": [
+    {
+      "id": "01-stagger",
+      "concept": "staggered card grid entrance (cascading fade-up)",
+      "good_fixture": "01-stagger-good.html",
+      "bad_fixture": "01-stagger-bad.html",
+      "expected_fault_keywords": ["stagger", "cascade", "entrance", "fade", "rise", "missing", "instant", "pop"],
+      "steps": [
+        { "do": "wait", "ms": 200 },
+        { "do": "capture", "label": "initial paint — cards should rise in" }
+      ]
+    },
+    {
+      "id": "02-hover",
+      "concept": "button hover state (transform + color transition)",
+      "good_fixture": "02-hover-good.html",
+      "bad_fixture": "02-hover-bad.html",
+      "expected_fault_keywords": ["hover", "missing", "instant", "no transition", "no feedback", "static"],
+      "steps": [
+        { "do": "hover", "selector": "#hover-me", "label": "hover state should fade in" },
+        { "do": "wait", "ms": 100 },
+        { "do": "capture", "label": "during hover" }
+      ]
+    },
+    {
+      "id": "03-press",
+      "concept": ":active press feedback (scale to 0.97)",
+      "good_fixture": "03-press-good.html",
+      "bad_fixture": "03-press-bad.html",
+      "expected_fault_keywords": ["press", "active", "click", "tactile", "scale", "missing", "no feedback", "instant"],
+      "steps": [
+        { "do": "click", "selector": "#press-me", "label": "click should show pressed scale" },
+        { "do": "wait", "ms": 80 },
+        { "do": "capture", "label": "post-click" }
+      ]
+    },
+    {
+      "id": "04-modal",
+      "concept": "modal entrance (slide-up + fade + backdrop fade)",
+      "good_fixture": "04-modal-good.html",
+      "bad_fixture": "04-modal-bad.html",
+      "expected_fault_keywords": ["modal", "pop", "instant", "missing", "no transition", "no fade", "no slide", "abrupt"],
+      "steps": [
+        { "do": "click", "selector": "#open", "label": "modal should slide + fade in" },
+        { "do": "wait", "ms": 400 },
+        { "do": "capture", "label": "after open" }
+      ]
+    },
+    {
+      "id": "05-loading",
+      "concept": "loading state (skeleton shimmer → cross-fade content)",
+      "good_fixture": "05-loading-good.html",
+      "bad_fixture": "05-loading-bad.html",
+      "expected_fault_keywords": ["loading", "spinner", "skeleton", "indicator", "feedback", "missing", "blank", "nothing happens"],
+      "steps": [
+        { "do": "click", "selector": "#search", "label": "search clicked — expect skeleton during 1.3s wait" },
+        { "do": "wait", "ms": 700 },
+        { "do": "capture", "label": "mid-wait" },
+        { "do": "wait", "ms": 800 },
+        { "do": "capture", "label": "after results arrive" }
+      ]
+    },
+    {
+      "id": "06-error",
+      "concept": "form error reveal (fade + slide-down)",
+      "good_fixture": "06-error-good.html",
+      "bad_fixture": "06-error-bad.html",
+      "expected_fault_keywords": ["error", "fade", "slide", "instant", "pop", "missing", "transition", "abrupt"],
+      "steps": [
+        { "do": "click", "selector": "form button[type=submit]", "label": "submit empty — errors should fade in" },
+        { "do": "wait", "ms": 400 },
+        { "do": "capture", "label": "errors visible" }
+      ]
+    },
+    {
+      "id": "07-toast",
+      "concept": "toast/snackbar (slide-up from bottom + auto-dismiss)",
+      "good_fixture": "07-toast-good.html",
+      "bad_fixture": "07-toast-bad.html",
+      "expected_fault_keywords": ["toast", "snackbar", "slide", "fade", "missing", "instant", "pop", "no transition"],
+      "steps": [
+        { "do": "click", "selector": "#show", "label": "trigger toast" },
+        { "do": "wait", "ms": 400 },
+        { "do": "capture", "label": "toast visible" }
+      ]
+    },
+    {
+      "id": "08-counter",
+      "concept": "number counter ramp (count-up animation)",
+      "good_fixture": "08-counter-good.html",
+      "bad_fixture": "08-counter-bad.html",
+      "expected_fault_keywords": ["counter", "count", "ramp", "tween", "missing", "instant", "snap", "jump", "no animation"],
+      "steps": [
+        { "do": "click", "selector": "#reveal", "label": "trigger counter ramp" },
+        { "do": "wait", "ms": 700 },
+        { "do": "capture", "label": "counter ramping" }
+      ]
+    },
+    {
+      "id": "09-dashboard",
+      "concept": "dashboard reveal: KPI tile stagger + counter ramps + chart bars rise (3 concurrent animation systems)",
+      "good_fixture": "09-dashboard-good.html",
+      "bad_fixture": "09-dashboard-bad.html",
+      "expected_fault_keywords": ["counter", "ramp", "snap", "instant", "chart", "bar", "rise", "missing", "static"],
+      "steps": [
+        { "do": "wait", "ms": 200 },
+        { "do": "capture", "label": "dashboard initial paint — concurrent animations" }
+      ]
+    },
+    {
+      "id": "10-modal-stack",
+      "concept": "modal stack with content stagger: backdrop fade + modal slide+fade + inner children stagger",
+      "good_fixture": "10-modal-stack-good.html",
+      "bad_fixture": "10-modal-stack-bad.html",
+      "expected_fault_keywords": ["stagger", "children", "content", "inner", "simultaneous", "no stagger", "missing", "instant"],
+      "steps": [
+        { "do": "click", "selector": "#open", "label": "open modal — children should stagger" },
+        { "do": "wait", "ms": 500 },
+        { "do": "capture", "label": "modal open with stagger sequence" }
+      ]
+    },
+    {
+      "id": "11-form-rich",
+      "concept": "form rich feedback: focus ring + button press + loading spinner + success card slide-in",
+      "good_fixture": "11-form-rich-good.html",
+      "bad_fixture": "11-form-rich-bad.html",
+      "expected_fault_keywords": ["press", "active", "spinner", "loading", "success", "slide", "missing", "no feedback"],
+      "steps": [
+        { "do": "click", "selector": "input#name", "label": "focus name" },
+        { "do": "type", "selector": "input#name", "value": "Ada" },
+        { "do": "click", "selector": "input#email" },
+        { "do": "type", "selector": "input#email", "value": "ada@example.com" },
+        { "do": "click", "selector": "form button[type=submit]", "label": "submit — expect press + spinner + success" },
+        { "do": "wait", "ms": 400 },
+        { "do": "capture", "label": "during submit — spinner should be visible" },
+        { "do": "wait", "ms": 700 },
+        { "do": "capture", "label": "after submit — success should slide in" }
+      ]
+    },
+    {
+      "id": "12-scroll",
+      "concept": "scroll-driven animations: scroll-progress bar + IntersectionObserver section reveal + parallax hero",
+      "good_fixture": "12-scroll-good.html",
+      "bad_fixture": "12-scroll-bad.html",
+      "expected_fault_keywords": ["scroll", "progress", "indicator", "reveal", "intersect", "parallax", "fade", "missing"],
+      "steps": [
+        { "do": "scroll", "ms": 800, "label": "scroll down — progress bar + section reveals + parallax should fire" }
+      ]
+    }
+  ]
+}

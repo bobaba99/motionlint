@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Aurora — Studio Carla</title>
+<link rel="stylesheet" href="/eval/_base.css">
+<style>
+  /* L2 control: a calm, well-spaced portfolio landing. Should not raise critical issues. */
+  body { background: #faf8f4; color: #1f2937; }
+  .frame { padding: 64px 24px; }
+  .nav { display: flex; justify-content: space-between; align-items: center; padding: 8px 0 32px; }
+  .brand { font-weight: 700; letter-spacing: -.02em; font-size: 18px; }
+  .nav a { font-size: 14.5px; color: #4b5563; margin-left: 24px; }
+  h1 { font-size: 56px; line-height: 1.05; letter-spacing: -.02em; margin: 0 0 14px; max-width: 16ch; }
+  .lead { font-size: 18px; color: #4b5563; max-width: 56ch; line-height: 1.6; margin: 0 0 32px; }
+  .cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; margin-top: 56px; }
+  .work { background: #fff; border: 1px solid #e8e2d8; border-radius: 14px; overflow: hidden; }
+  .work .preview { aspect-ratio: 4 / 3; background: linear-gradient(135deg, #e7e2d6, #c8b993); }
+  .work .meta { padding: 16px 18px; }
+  .work h3 { margin: 0 0 4px; font-size: 16px; }
+  .work p { margin: 0; color: #6b7280; font-size: 14px; }
+  .btn-primary { background: #1f2937; color: #fff; }
+  .btn-secondary { background: transparent; border-color: #d6d0c2; color: #1f2937; }
+</style>
+</head>
+<body>
+<main class="frame">
+  <header class="nav">
+    <div class="brand">Studio Carla</div>
+    <nav><a href="#">Work</a><a href="#">About</a><a href="#">Journal</a><a href="#">Contact</a></nav>
+  </header>
+  <h1>Calm interfaces for thoughtful products.</h1>
+  <p class="lead">Independent design studio working with founders on brand systems, product surfaces, and the small moments that make a product feel like itself.</p>
+  <div class="row">
+    <a class="btn btn-primary" href="#">See selected work</a>
+    <a class="btn btn-secondary" href="#">Read the journal</a>
+  </div>
+  <section class="cards">
+    <article class="work"><div class="preview"></div><div class="meta"><h3>Linnea — banking</h3><p>Brand and product surfaces for a private bank.</p></div></article>
+    <article class="work"><div class="preview"></div><div class="meta"><h3>Boreal — climate</h3><p>Marketing site and onboarding for a carbon platform.</p></div></article>
+    <article class="work"><div class="preview"></div><div class="meta"><h3>Atelier — coffee</h3><p>Identity and packaging for a roaster in Helsinki.</p></div></article>
+  </section>
+</main>
+</body>
+</html>

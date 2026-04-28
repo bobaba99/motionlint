@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Aurora — Confirm delete</title>
+<link rel="stylesheet" href="/eval/_base.css">
+<style>
+  /* SEEDED FAULT 1: modal lacks a visible Cancel button — only an X icon top-right.
+     SEEDED FAULT 2: the destructive 'Delete forever' button is styled identically to the safe option. */
+  .backdrop { background: rgba(0,0,0,.45); position: fixed; inset: 0; }
+  .modal { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: #fff; border-radius: 14px; width: 440px; max-width: calc(100vw - 32px); padding: 24px; box-shadow: 0 28px 48px -16px rgba(0,0,0,.4); }
+  .modal .x { position: absolute; top: 10px; right: 12px; background: transparent; border: 0; font-size: 14px; color: #9ca3af; cursor: pointer; }
+  .modal h2 { margin: 0 0 6px; font-size: 18px; }
+  .modal p { margin: 0 0 18px; color: #4b5563; }
+  .modal-actions { display: flex; gap: 10px; justify-content: flex-end; }
+  .modal-actions button { background: #2563eb; color: #fff; border: 0; padding: 10px 16px; border-radius: 8px; font-weight: 600; }
+</style>
+</head>
+<body>
+<div class="backdrop"></div>
+<div class="modal" role="dialog" aria-modal="true">
+  <button class="x" aria-label="close">✕</button>
+  <h2>Delete workspace?</h2>
+  <p>This will permanently delete the workspace and every review under it. This cannot be undone.</p>
+  <div class="modal-actions">
+    <button>Keep workspace</button>
+    <button>Delete forever</button>
+  </div>
+</div>
+</body>
+</html>

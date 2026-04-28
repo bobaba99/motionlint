@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><title>Loading state — good</title>
+<link rel="stylesheet" href="/anim/_base.css">
+<style>
+  .results { margin-top: 24px; min-height: 220px; display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; }
+  .skeleton {
+    background: linear-gradient(90deg, #1a1d27 0%, #232838 50%, #1a1d27 100%);
+    background-size: 200% 100%;
+    animation: shimmer 1.4s linear infinite;
+    border-radius: 10px; height: 90px;
+  }
+  .real { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 16px;
+          opacity: 0; transform: translateY(8px); transition: opacity .3s ease-out, transform .3s ease-out; }
+  .real.in { opacity: 1; transform: translateY(0); }
+  @keyframes shimmer { 0% { background-position: 100% 0; } 100% { background-position: -100% 0; } }
+</style></head>
+<body><main class="frame">
+  <h1>Search</h1>
+  <p class="muted">Click search → skeleton shimmers → cross-fades to results.</p>
+  <button class="btn" id="search">Search</button>
+  <div class="results" id="results"></div>
+  <script>
+    const r = document.getElementById('results');
+    const search = document.getElementById('search');
+    function showSkeletons() {
+      r.innerHTML = '<div class="skeleton"></div><div class="skeleton"></div><div class="skeleton"></div><div class="skeleton"></div><div class="skeleton"></div><div class="skeleton"></div>';
+    }
+    function showReal() {
+      r.innerHTML = '<div class="real">Result A</div><div class="real">Result B</div><div class="real">Result C</div><div class="real">Result D</div><div class="real">Result E</div><div class="real">Result F</div>';
+      requestAnimationFrame(() => { r.querySelectorAll('.real').forEach(el => el.classList.add('in')); });
+    }
+    search.addEventListener('click', () => { showSkeletons(); setTimeout(showReal, 1300); });
+  </script>
+</main></body></html>

@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Sign up — Aurora</title>
+<link rel="stylesheet" href="/styles.css">
+<script src="/_partials.js"></script>
+<script type="module" src="/anim.js"></script>
+</head>
+<body>
+<div data-nav></div>
+
+<main class="container" style="padding: 80px 0 40px;">
+  <div class="center" style="text-align:center;">
+    <span class="eyebrow" data-reveal><span class="dot"></span> 14-day free trial</span>
+    <h1 class="hero-title" data-reveal style="font-size:clamp(30px,4.6vw,48px);margin:18px auto 12px;">Create your Aurora account</h1>
+    <p class="lead" data-reveal style="margin:0 auto 36px;">No credit card required. Cancel anytime.</p>
+  </div>
+
+  <form class="form" data-signup data-reveal novalidate>
+    <div class="field">
+      <label for="name">Full name</label>
+      <input id="name" name="name" type="text" placeholder="Ada Lovelace" autocomplete="name">
+      <div class="err">Please enter your name.</div>
+    </div>
+    <div class="field">
+      <label for="email">Work email</label>
+      <input id="email" name="email" type="email" placeholder="ada@example.com" autocomplete="email">
+      <div class="err">Please enter a valid email address.</div>
+    </div>
+    <div class="field">
+      <label for="company">Company</label>
+      <input id="company" name="company" type="text" placeholder="Aurora Labs" autocomplete="organization">
+      <div class="hint">We use this to personalize your dashboard.</div>
+      <div class="err">Please enter your company.</div>
+    </div>
+    <div class="field">
+      <label for="role">Your role</label>
+      <select id="role" name="role">
+        <option value="">Pick one</option>
+        <option>Frontend engineer</option>
+        <option>Designer / Design engineer</option>
+        <option>Full-stack engineer</option>
+        <option>Founder</option>
+      </select>
+      <div class="err">Please select your role.</div>
+    </div>
+    <div class="actions">
+      <button type="reset" class="btn btn-ghost">Clear</button>
+      <button type="submit" class="btn btn-primary">Create account</button>
+    </div>
+  </form>
+
+  <section data-success hidden style="max-width:480px;margin:18px auto 0;background:var(--bg-card);border:1px solid var(--accent);border-radius:14px;padding:20px;">
+    <strong>You’re in.</strong>
+    <p style="color:var(--text-dim);margin:6px 0 0;">We sent a magic link to your inbox. Click it to finish setting up your workspace.</p>
+  </section>
+</main>
+
+<div data-footer></div>
+</body>
+</html>

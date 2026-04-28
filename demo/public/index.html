@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Aurora — Ship UI you can be proud of</title>
+<meta name="description" content="A TS-first animation showcase used as a MotionLint review target.">
+<link rel="stylesheet" href="/styles.css">
+<script src="/_partials.js"></script>
+<script type="module" src="/anim.js"></script>
+</head>
+<body>
+<div data-nav></div>
+
+<div class="shapes" aria-hidden="true">
+  <div class="shape s1"></div>
+  <div class="shape s2"></div>
+  <div class="shape s3"></div>
+</div>
+
+<main class="container hero" style="position: relative;">
+  <span class="eyebrow" data-reveal>
+    <span class="dot"></span> v0.1 — open beta
+  </span>
+  <h1 class="hero-title" data-reveal>
+    Design&nbsp;reviews,<br>at the speed of code.
+  </h1>
+  <p class="lead" data-reveal>
+    Aurora gives your team an opinionated set of motion primitives — typed end-to-end — so polished interactions ship without a designer in the room.
+  </p>
+  <div class="hero-cta" data-reveal>
+    <a class="btn btn-primary btn-lg" href="/signup">Get started — free</a>
+    <a class="btn btn-ghost btn-lg" href="/pricing">See pricing →</a>
+  </div>
+  <div class="hero-meta" data-reveal>
+    Trusted by teams at Linear · Vercel · Supabase · Postr
+  </div>
+  <div data-lottie style="width:64px;height:64px;margin:24px auto 0;"></div>
+</main>
+
+<section class="section">
+  <div class="container">
+    <div class="center">
+      <h2 data-gsap-fade style="opacity:0;transform:translateY(10px)">Everything you need to move</h2>
+      <p class="muted" data-gsap-fade style="opacity:0;transform:translateY(10px)">Six TS-first primitives, composed into the patterns design systems actually need.</p>
+    </div>
+    <div class="features">
+      <article class="feature">
+        <div class="icon">✦</div>
+        <h3>Spring transitions</h3>
+        <p>Physics-based motion with sane defaults. Override per-element when you need character.</p>
+      </article>
+      <article class="feature">
+        <div class="icon">⤳</div>
+        <h3>Stagger orchestration</h3>
+        <p>Choreograph entry sequences across lists, grids, and routes with a single function call.</p>
+      </article>
+      <article class="feature">
+        <div class="icon">◑</div>
+        <h3>Scroll-driven scenes</h3>
+        <p>Tie any property to scroll progress. Works with native scroll-timeline where supported.</p>
+      </article>
+      <article class="feature">
+        <div class="icon">↻</div>
+        <h3>Auto-animate</h3>
+        <p>Drop into any list and inserts/removes/reorders glide instead of jump. Zero config.</p>
+      </article>
+      <article class="feature">
+        <div class="icon">∾</div>
+        <h3>Gesture choreography</h3>
+        <p>Drag, pinch, and swipe with momentum — all wired to the same timeline graph.</p>
+      </article>
+      <article class="feature">
+        <div class="icon">▣</div>
+        <h3>Lottie + JSON</h3>
+        <p>Render After Effects or Rive timelines next to your components. Same orchestrator.</p>
+      </article>
+    </div>
+  </div>
+</section>
+
+<section class="section">
+  <div class="container">
+    <div class="center">
+      <h2>Loved by teams who hate JIRA tickets like “make it pop”</h2>
+      <p class="muted">Sample testimonials below — the layout you want MotionLint to evaluate.</p>
+    </div>
+    <div class="features">
+      <article class="feature">
+        <div class="icon">”</div>
+        <h3>“We removed our motion lib and replaced it with Aurora in an afternoon.”</h3>
+        <p>— Maya R., staff eng, fintech</p>
+      </article>
+      <article class="feature">
+        <div class="icon">”</div>
+        <h3>“The TS types alone justified the migration.”</h3>
+        <p>— Jonas P., DX lead, devtools</p>
+      </article>
+      <article class="feature">
+        <div class="icon">”</div>
+        <h3>“Auto-animate made our drag-to-reorder list ship two sprints early.”</h3>
+        <p>— Aria T., founding designer, AI product</p>
+      </article>
+    </div>
+  </div>
+</section>
+
+<div data-footer></div>
+</body>
+</html>

@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><title>Scroll-driven — partially broken (multi-animation)</title>
+<link rel="stylesheet" href="/anim/_base.css">
+<style>
+  /* MULTI-ANIMATION (partial): scroll-progress bar ✗ missing entirely.
+     Section reveal ✗ sections always visible (no scroll-triggered fade).
+     Parallax hero ✓ kept working. */
+  body { min-height: 220vh; }
+  .hero {
+    height: 60vh; display: grid; place-items: center;
+    background: radial-gradient(120% 80% at 50% 100%, rgba(108,124,255,.25), transparent 60%);
+    position: relative; overflow: hidden;
+  }
+  .hero h1 { font-size: 64px; letter-spacing: -.02em; margin: 0; will-change: transform; }
+  /* SEEDED: no .reveal animation — sections always visible */
+  section.story { padding: 60px 0; max-width: 760px; margin: 0 auto; }
+  section.story h2 { font-size: 32px; margin: 0 0 8px; }
+  section.story p { color: var(--dim); font-size: 18px; line-height: 1.7; }
+</style></head>
+<body>
+<main class="frame">
+  <div class="hero"><h1 id="hero">Polish at scale</h1></div>
+  <section class="story"><h2>Why motion matters</h2><p>Polish signals respect for the user's time. The right entrance, the right delay, the right curve.</p></section>
+  <section class="story"><h2>What we shipped</h2><p>An opinionated motion toolkit so the median ticket reads less like 'make it pop' and more like 'drop in the spring preset'.</p></section>
+  <section class="story"><h2>Get started</h2><p>Install the SDK and import the primitives. The defaults are tasteful. Override when you need character.</p></section>
+</main>
+<script>
+  // Parallax hero kept (the working animation)
+  const hero = document.getElementById('hero');
+  function updateHero() { hero.style.transform = 'translateY(' + (window.scrollY * 0.4) + 'px)'; }
+  window.addEventListener('scroll', updateHero, { passive: true });
+  // Scroll-progress bar removed entirely.
+  // Section reveal removed (sections render fully visible from t=0).
+</script>
+</body></html>

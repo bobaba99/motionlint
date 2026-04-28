@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Aurora — Get started</title>
+<link rel="stylesheet" href="/eval/_base.css">
+<style>
+  /* CONTROL: a deliberately well-designed, conservative page. Should produce few/no critical issues. */
+  .hero { padding: 56px 0 28px; }
+  .hero h1 { font-size: 40px; line-height: 1.1; margin: 0 0 12px; letter-spacing: -.02em; }
+  .hero p { font-size: 18px; color: #4b5563; max-width: 60ch; margin: 0 0 24px; }
+  .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; margin-top: 32px; }
+  .card { background: #ffffff; border: 1px solid #e5e7eb; border-radius: 12px; padding: 22px; }
+  .card h3 { margin: 0 0 6px; font-size: 17px; }
+  .card p { margin: 0; color: #6b7280; font-size: 14.5px; line-height: 1.5; }
+  .row { gap: 12px; }
+  .btn-primary { background: #111827; }
+  @media (max-width: 700px) { .grid { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+<main class="frame">
+  <section class="hero">
+    <h1>Build interfaces people enjoy.</h1>
+    <p>Aurora is an opinionated motion toolkit for product teams who care about polish but ship fast. Start free; upgrade when your team grows.</p>
+    <div class="row">
+      <a class="btn btn-primary" href="#">Start free trial</a>
+      <a class="btn btn-secondary" href="#">View docs</a>
+    </div>
+  </section>
+  <section class="grid">
+    <article class="card"><h3>Type-safe motion</h3><p>End-to-end TypeScript types across every primitive, including server actions.</p></article>
+    <article class="card"><h3>Auto-animate</h3><p>Drop into any list and inserts/removes glide instead of jump. Zero config.</p></article>
+    <article class="card"><h3>Scroll scenes</h3><p>Tie any property to scroll progress with native scroll-timeline support.</p></article>
+  </section>
+</main>
+</body>
+</html>

@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><title>Toast — broken</title>
+<link rel="stylesheet" href="/anim/_base.css">
+<style>
+  /* SEEDED FAULT: toast appears/disappears via display: none/block. No transition. */
+  .toast {
+    position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: 10px; padding: 12px 18px; color: var(--text);
+    display: none;
+  }
+  .toast.in { display: block; }
+</style></head>
+<body><main class="frame">
+  <h1>Toast / snackbar</h1>
+  <p class="muted">Toast pops in and out with no animation.</p>
+  <button class="btn" id="show">Show toast</button>
+  <div class="toast" id="t">Saved successfully</div>
+  <script>
+    const t = document.getElementById('t');
+    document.getElementById('show').addEventListener('click', () => {
+      t.classList.add('in');
+      setTimeout(() => t.classList.remove('in'), 2000);
+    });
+  </script>
+</main></body></html>

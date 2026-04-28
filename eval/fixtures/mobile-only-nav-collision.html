@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Aurora — Checkout</title>
+<link rel="stylesheet" href="/eval/_base.css">
+<style>
+  /* L3 SEEDED FAULT (viewport-conditional): on mobile, sticky bottom CTA bar overlaps the lowest input.
+     Desktop is fine; only visible at <600px. */
+  .frame { padding: 24px 16px 24px; }
+  .field { margin-bottom: 14px; }
+  .cta {
+    position: fixed; left: 0; right: 0; bottom: 0;
+    padding: 16px;
+    background: rgba(255,255,255,.96);
+    border-top: 1px solid #e5e7eb;
+  }
+  .cta button { width: 100%; }
+  /* On desktop the CTA isn't sticky, so no collision happens. */
+  @media (min-width: 600px) {
+    .cta { position: static; padding: 0; background: transparent; border: 0; margin-top: 16px; }
+    .cta button { width: auto; padding: 12px 22px; }
+  }
+</style>
+</head>
+<body>
+<main class="frame">
+  <h1>Checkout</h1>
+  <p class="muted">Fill in your details to complete the purchase.</p>
+  <div class="field"><label>Cardholder name</label><input type="text"></div>
+  <div class="field"><label>Card number</label><input type="text" placeholder="•••• •••• •••• 4242"></div>
+  <div class="field"><label>Expiration</label><input type="text" placeholder="MM/YY"></div>
+  <div class="field"><label>CVC</label><input type="text" placeholder="123"></div>
+  <div class="field"><label>Billing zip</label><input type="text" placeholder="94110"></div>
+  <div class="field"><label>Promo code (optional)</label><input type="text"></div>
+</main>
+<div class="cta"><button class="btn btn-primary">Pay $128.00</button></div>
+</body>
+</html>

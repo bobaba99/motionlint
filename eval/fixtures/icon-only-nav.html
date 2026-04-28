@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Aurora — Workspace</title>
+<link rel="stylesheet" href="/eval/_base.css">
+<style>
+  /* SEEDED FAULT 1: side nav is icon-only with no text labels, no tooltips visible at rest.
+     SEEDED FAULT 2: active item indicated only by a 1px subtle underline — almost invisible. */
+  .layout { display: grid; grid-template-columns: 64px 1fr; min-height: 100vh; }
+  .side { background: #f9fafb; border-right: 1px solid #e5e7eb; padding: 16px 0; display: flex; flex-direction: column; align-items: center; gap: 18px; }
+  .side a { color: #4b5563; font-size: 22px; text-decoration: none; padding: 6px 12px; border-bottom: 1px solid transparent; }
+  .side a.active { border-bottom: 1px solid #2563eb; }
+  .main { padding: 32px; }
+</style>
+</head>
+<body>
+<div class="layout">
+  <nav class="side" aria-label="primary">
+    <a href="#">⌂</a>
+    <a href="#" class="active">▤</a>
+    <a href="#">✎</a>
+    <a href="#">⚙</a>
+    <a href="#">⚐</a>
+    <a href="#">?</a>
+  </nav>
+  <main class="main">
+    <h1>Workspace</h1>
+    <p class="muted">Use the sidebar to switch sections.</p>
+    <div class="row">
+      <div class="card" style="background:#fff;border:1px solid #e5e7eb;border-radius:12px;padding:18px;flex:1;">
+        <h3 style="margin:0 0 4px;">Recent</h3><p style="margin:0;color:#6b7280;font-size:14px;">Your last 7 reviews.</p>
+      </div>
+      <div class="card" style="background:#fff;border:1px solid #e5e7eb;border-radius:12px;padding:18px;flex:1;">
+        <h3 style="margin:0 0 4px;">Pinned</h3><p style="margin:0;color:#6b7280;font-size:14px;">Reviews you starred.</p>
+      </div>
+    </div>
+  </main>
+</div>
+</body>
+</html>

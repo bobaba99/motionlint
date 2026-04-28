@@ -1,0 +1,11 @@
+node_modules/
+dist/
+.motionlint/
+*.log
+.DS_Store
+.env
+.env.local
+!.env.example
+coverage/
+playwright-report/
+test-results/

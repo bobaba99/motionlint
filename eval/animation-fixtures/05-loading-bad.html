@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><title>Loading state — broken</title>
+<link rel="stylesheet" href="/anim/_base.css">
+<style>
+  /* SEEDED FAULT: clicking search shows nothing for 1.3s, then results pop in.
+     No spinner, no skeleton, no progress indicator. */
+  .results { margin-top: 24px; min-height: 220px; display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; }
+  .real { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 16px; }
+</style></head>
+<body><main class="frame">
+  <h1>Search</h1>
+  <p class="muted">Click search and wait. Nothing happens for 1.3s.</p>
+  <button class="btn" id="search">Search</button>
+  <div class="results" id="results"></div>
+  <script>
+    const r = document.getElementById('results');
+    document.getElementById('search').addEventListener('click', () => {
+      r.innerHTML = '';
+      setTimeout(() => {
+        r.innerHTML = '<div class="real">Result A</div><div class="real">Result B</div><div class="real">Result C</div><div class="real">Result D</div><div class="real">Result E</div><div class="real">Result F</div>';
+      }, 1300);
+    });
+  </script>
+</main></body></html>

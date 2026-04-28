@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><title>Modal entrance — broken</title>
+<link rel="stylesheet" href="/anim/_base.css">
+<style>
+  /* SEEDED FAULT: modal toggles via display: block. No transition, no fade-in,
+     no scale, no backdrop fade. Pops in instantly. */
+  .backdrop { position: fixed; inset: 0; background: rgba(0,0,0,.5); display: none; }
+  .backdrop.open { display: block; }
+  .modal {
+    position: fixed; left: 50%; top: 50%; transform: translate(-50%, -50%);
+    background: var(--card); border: 1px solid var(--border); border-radius: 14px;
+    padding: 28px; min-width: 380px; display: none;
+  }
+  .modal.open { display: block; }
+</style></head>
+<body><main class="frame">
+  <h1>Modal entrance</h1>
+  <p class="muted">Modal pops in with no transition.</p>
+  <button class="btn" id="open">Open modal</button>
+  <div class="backdrop" id="bd"></div>
+  <div class="modal" id="m">
+    <h2 style="margin-top:0">Confirm</h2>
+    <p>Are you sure?</p>
+    <div class="row" style="justify-content:flex-end">
+      <button class="btn btn-secondary" id="cancel">Cancel</button>
+      <button class="btn">Confirm</button>
+    </div>
+  </div>
+  <script>
+    const open = document.getElementById('open'); const m = document.getElementById('m'); const bd = document.getElementById('bd'); const cancel = document.getElementById('cancel');
+    open.addEventListener('click', () => { m.classList.add('open'); bd.classList.add('open'); });
+    cancel.addEventListener('click', () => { m.classList.remove('open'); bd.classList.remove('open'); });
+    bd.addEventListener('click', () => { m.classList.remove('open'); bd.classList.remove('open'); });
+  </script>
+</main></body></html>

@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><title>Counter ramp — good</title>
+<link rel="stylesheet" href="/anim/_base.css">
+<style>
+  .num { font-size: 72px; font-weight: 700; letter-spacing: -.02em; margin: 28px 0 8px; }
+</style></head>
+<body><main class="frame">
+  <h1>KPI counter</h1>
+  <p class="muted">Number ramps up smoothly over 1.2s when revealed.</p>
+  <button class="btn" id="reveal">Reveal stats</button>
+  <div class="num" id="n">0</div>
+  <p class="muted">Reviews this week.</p>
+  <script>
+    const n = document.getElementById('n');
+    const target = 12480;
+    document.getElementById('reveal').addEventListener('click', () => {
+      const start = performance.now();
+      const dur = 1200;
+      function tick(now) {
+        const t = Math.min(1, (now - start) / dur);
+        const eased = 1 - Math.pow(1 - t, 3); // ease-out cubic
+        n.textContent = Math.round(target * eased).toLocaleString();
+        if (t < 1) requestAnimationFrame(tick);
+      }
+      requestAnimationFrame(tick);
+    });
+  </script>
+</main></body></html>

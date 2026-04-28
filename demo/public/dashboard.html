@@ -1,0 +1,130 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Dashboard — Aurora</title>
+<link rel="stylesheet" href="/styles.css">
+<script src="/_partials.js"></script>
+<script type="module" src="/anim.js"></script>
+</head>
+<body>
+<div data-nav></div>
+
+<div data-scroll-progress style="height:3px;transform-origin:0 50%;background:linear-gradient(90deg,var(--accent),var(--accent-2));position:fixed;top:64px;left:0;right:0;z-index:60;"></div>
+
+<main class="container" style="padding: 32px 0 40px;">
+  <div class="dash-grid">
+    <aside class="sidebar" aria-label="primary">
+      <div class="group-title">Workspace</div>
+      <a href="#" class="active">Overview</a>
+      <a href="#">Reviews</a>
+      <a href="#">Insights</a>
+      <a href="#">Integrations</a>
+      <div class="group-title">Account</div>
+      <a href="#">Settings</a>
+      <a href="#">Billing</a>
+      <a href="#">Team</a>
+    </aside>
+
+    <section>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
+        <div>
+          <h1 style="margin:0 0 2px;font-size:22px;letter-spacing:-.02em;">Welcome back, Ada</h1>
+          <p style="margin:0;color:var(--text-dim);font-size:14px;">Here’s what’s happened in your workspace this week.</p>
+        </div>
+        <div style="display:flex;gap:8px;">
+          <button class="btn btn-ghost">Export</button>
+          <button class="btn btn-primary">New review</button>
+        </div>
+      </div>
+
+      <div class="kpis">
+        <div class="kpi">
+          <div class="label">Reviews</div>
+          <div class="value"><span data-count="248">0</span></div>
+          <div class="delta">▲ 12.4% vs last week</div>
+        </div>
+        <div class="kpi">
+          <div class="label">Critical issues</div>
+          <div class="value"><span data-count="11">0</span></div>
+          <div class="delta down">▼ 3 fewer than last week</div>
+        </div>
+        <div class="kpi">
+          <div class="label">Score (avg)</div>
+          <div class="value"><span data-count="82" data-prefix="">0</span>/100</div>
+          <div class="delta">▲ 4 points</div>
+        </div>
+        <div class="kpi">
+          <div class="label">MRR</div>
+          <div class="value"><span data-count="14820" data-prefix="$">$0</span></div>
+          <div class="delta">▲ 8.1% vs last month</div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-title">
+          <h3>Issues by category</h3>
+          <div class="seg">
+            <button class="active">7d</button>
+            <button>30d</button>
+            <button>90d</button>
+          </div>
+        </div>
+        <!-- inline SVG bar chart, deterministic -->
+        <svg viewBox="0 0 600 180" width="100%" preserveAspectRatio="none" role="img" aria-label="Issues by category">
+          <defs>
+            <linearGradient id="g1" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0" stop-color="#6c7cff"/><stop offset="1" stop-color="#29e6c4" stop-opacity=".4"/>
+            </linearGradient>
+          </defs>
+          <g fill="url(#g1)">
+            <rect x="20"  y="40"  width="40" height="120" rx="6"/>
+            <rect x="80"  y="80"  width="40" height="80"  rx="6"/>
+            <rect x="140" y="50"  width="40" height="110" rx="6"/>
+            <rect x="200" y="100" width="40" height="60"  rx="6"/>
+            <rect x="260" y="60"  width="40" height="100" rx="6"/>
+            <rect x="320" y="30"  width="40" height="130" rx="6"/>
+            <rect x="380" y="90"  width="40" height="70"  rx="6"/>
+            <rect x="440" y="55"  width="40" height="105" rx="6"/>
+            <rect x="500" y="74"  width="40" height="86"  rx="6"/>
+            <rect x="560" y="38"  width="40" height="122" rx="6"/>
+          </g>
+          <g font-size="11" fill="#9aa3b2" font-family="var(--font)">
+            <text x="20" y="175">spacing</text>
+            <text x="80" y="175">type</text>
+            <text x="140" y="175">color</text>
+            <text x="200" y="175">contrast</text>
+            <text x="260" y="175">layout</text>
+            <text x="320" y="175">hier.</text>
+            <text x="380" y="175">resp.</text>
+            <text x="440" y="175">consist.</text>
+            <text x="500" y="175">interact.</text>
+            <text x="560" y="175">content</text>
+          </g>
+        </svg>
+      </div>
+
+      <div class="panel">
+        <div class="panel-title">
+          <h3>Recent reviews</h3>
+          <button class="btn btn-ghost">View all</button>
+        </div>
+        <table class="activity">
+          <thead><tr><th>URL</th><th>Score</th><th>Issues</th><th>Status</th><th>Run</th></tr></thead>
+          <tbody data-auto-animate>
+            <tr><td>aurora.dev/</td><td>92</td><td>1 critical · 2 warn</td><td><span class="tag ok">passing</span></td><td>2m ago</td></tr>
+            <tr><td>aurora.dev/pricing</td><td>78</td><td>0 critical · 5 warn</td><td><span class="tag warn">review</span></td><td>17m ago</td></tr>
+            <tr><td>aurora.dev/dashboard</td><td>83</td><td>0 critical · 3 warn</td><td><span class="tag ok">passing</span></td><td>1h ago</td></tr>
+            <tr><td>aurora.dev/signup</td><td>61</td><td>2 critical · 4 warn</td><td><span class="tag bad">blocked</span></td><td>3h ago</td></tr>
+            <tr><td>aurora.dev/loading</td><td>74</td><td>0 critical · 3 warn</td><td><span class="tag warn">review</span></td><td>1d ago</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+  </div>
+</main>
+
+<div data-footer></div>
+</body>
+</html>
