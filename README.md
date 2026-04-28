@@ -2,7 +2,23 @@
 
 > **AI design review in your terminal — for what users actually see, click, and watch animate.** Three modes: static UX review, scripted-flow animation review (16 frames per burst at 50ms intervals via CDP screencast), and an interactive animation tuner that hands changes back to Claude Code. Works as a CLI or as an MCP server inside Claude Code, Cursor, or any MCP-aware client.
 
-[![npm version](https://img.shields.io/npm/v/motionlint)](https://www.npmjs.com/package/motionlint) [![license: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+[![npm version](https://img.shields.io/npm/v/motionlint)](https://www.npmjs.com/package/motionlint) [![license: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE) [![CI](https://github.com/bobaba99/motionlint/actions/workflows/ci.yml/badge.svg)](https://github.com/bobaba99/motionlint/actions/workflows/ci.yml)
+
+## Install
+
+```bash
+# CLI
+npm install -g motionlint                              # global
+npx motionlint review <url>                            # one-shot, no install
+
+# Claude Code (MCP server)
+claude mcp add motionlint -- npx -y motionlint mcp
+
+# One-time per machine: Playwright Chromium (~300MB)
+npx playwright install chromium
+```
+
+Requires Node 18+. Package on npm: [motionlint](https://www.npmjs.com/package/motionlint). Full setup, API keys, and provider matrix below.
 
 ## What it does
 
@@ -166,16 +182,7 @@ $ motionlint tune http://localhost:3000
 
 ## Setup
 
-```bash
-# Install (global or one-shot)
-npm install -g motionlint        # global install
-npx motionlint review <url>      # one-off without install
-
-# Install Playwright Chromium (one-time per machine, ~300MB)
-npx playwright install chromium
-```
-
-**Requires Node 18+**.
+Install commands are at the top of this README. This section covers API keys and runtime configuration.
 
 ### API keys
 
