@@ -27,6 +27,7 @@ const ROUTES = new Map([
   ["/signup",    "signup.html"],
   ["/dashboard", "dashboard.html"],
   ["/loading",   "loading.html"],
+  ["/cat",       "cat.html"],
 ]);
 
 async function safeRead(path) {
