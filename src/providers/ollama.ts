@@ -57,7 +57,10 @@ export class OllamaProvider implements VisionProvider {
       throw new Error(`Ollama API ${res.status}: ${text.slice(0, 400)}`);
     }
 
-    const json = (await res.json()) as { response?: string };
-    return parseAnalysisResponse(json.response ?? "", viewportName);
+    const json = (await res.json()) as { response?: string; thinking?: string };
+    // Some hybrid-architecture models (e.g. nemotron3) emit format:"json"
+    // output into the `thinking` channel and leave `response` empty.
+    const body = json.response?.trim() ? json.response : (json.thinking ?? "");
+    return parseAnalysisResponse(body, viewportName);
   }
 }
