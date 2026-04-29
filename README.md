@@ -120,17 +120,21 @@ MotionLint auto-detects in this order: **Ollama (local) → Anthropic → OpenAI
 
 The flow-review pipeline was stress-tested across **12 popular web-app animation patterns × 2 variants** (24 fixtures total) — staggered entrances, hover/press/focus, modal entrances, loading skeletons, form errors, toasts, counter ramps, multi-animation dashboards, modal-with-content stagger, rich form feedback (focus + press + spinner + success), and scroll-driven animations (progress bar + IntersectionObserver reveal + parallax).
 
-Run on **2026-04-28** against the latest model from each major provider:
+Run on **2026-04-29** against the latest model from each major provider plus three Ollama-served local models:
 
-| Provider · model | Recall (broken caught) | FPR (clean flagged) | Score gap | Wall time |
+| Provider · model | Recall (broken caught) | FPR (clean flagged) | Score gap | Wall time¹ |
 | --- | --- | --- | --- | --- |
 | **OpenAI · gpt-5.5** | **100%** (12/12) | **0%** (0/12) | +4.2 | 11.6 min |
 | **Anthropic · claude-opus-4-7** | **100%** (12/12) | 8% (1/12) | +4.2 | 9.6 min |
 | **Anthropic · claude-sonnet-4-6** | **100%** (12/12) | 8% (1/12) | +5.1 | 14.2 min |
+| **Ollama · nemotron3:33b** (local, 27 GB) | **100%** (12/12) | 25% (3/12) | +5.1 | 7.7 min |
 | **Google · gemini-3.1-pro-preview** | 92% (11/12) | **0%** (0/12) | +5.5 | 5.3 min |
-| **Ollama · gemma3:4b (local)** | 83% (10/12) | 17% (2/12) | +1.1 | 3.6 min |
+| **Ollama · gemma3:4b** (local, 3.3 GB) | 83% (10/12) | 17% (2/12) | +1.1 | 3.6 min |
+| **Ollama · glm-ocr** (local, 2.2 GB) | 33% (4/12) | 33% (4/12) | +0.3 | 11.3 min |
 
-**Read this as:** four out of five providers are shippable. **OpenAI gpt-5.5 is the only provider with both 100% recall AND 0% FPR.** Both Anthropic models match on recall but flag the same one clean fixture as critical — Sonnet 4.6 is the better Anthropic value (~5× cheaper per token than Opus, equivalent quality on this test). Gemini 3.1 Pro is ~3× faster and 5× cheaper, at the cost of one missed broken pattern. Local Ollama is workable for iteration loops but flags too many clean implementations to use as a CI gate.
+¹ Local-model wall times measured on an Apple M4 Max (128 GB unified). Cloud-provider times reflect API latency, not local compute.
+
+**Read this as:** six of the seven model combinations are shippable for at least one workflow. **OpenAI gpt-5.5 remains the only provider with 100% recall AND 0% FPR** — the safest hard CI gate. The standout new result: **nemotron3:33b is the first 100%-recall local model**, ties Sonnet 4.6 on score gap, runs entirely on-device, and costs $0 — but its 25% false-positive rate (3 clean fixtures flagged critical) means it's better as an iteration-loop reviewer than a merge-blocker on a powerful local machine. Both Anthropic models match on recall and flag the same one clean fixture; Sonnet 4.6 is the better Anthropic value (~5× cheaper per token than Opus, equivalent quality on this test). Gemini 3.1 Pro is ~3× faster and 5× cheaper than Sonnet, at the cost of one missed broken pattern. **glm-ocr is too weak for this task** (33% recall, 33% FPR — barely above coin-flip) and is documented here only so future readers don't try the same path.
 
 Full per-provider scorecards in [.motionlint/stress/](.motionlint/stress/) after running [scripts/run-all-benchmarks.mjs](scripts/run-all-benchmarks.mjs).
 
@@ -141,18 +145,22 @@ Full per-provider scorecards in [.motionlint/stress/](.motionlint/stress/) after
 | `openai` | `gpt-5.5` | `OPENAI_API_KEY=…` | **100% recall · 0% FPR · +4.2 gap** | ~$0.005 |
 | `anthropic` | `claude-opus-4-7` | `ANTHROPIC_API_KEY=…` | **100% recall** · 8% FPR · +4.2 gap | ~$0.025 |
 | `anthropic` | `claude-sonnet-4-6` | `ANTHROPIC_API_KEY=…` | **100% recall** · 8% FPR · +5.1 gap | ~$0.005 |
+| `ollama` | `nemotron3:33b` (local, 27 GB) | `ollama serve` + `ollama pull nemotron3:33b` | **100% recall** · 25% FPR · +5.1 gap | $0 |
 | `google` | `gemini-3.1-pro-preview` | `GOOGLE_API_KEY=…` | 92% recall · **0% FPR** · +5.5 gap | ~$0.001 |
-| `ollama` | `gemma3:4b` (local) | `ollama serve` + `ollama pull gemma3:4b` | 83% recall · 17% FPR · +1.1 gap | $0 |
+| `ollama` | `gemma3:4b` (local, 3.3 GB) | `ollama serve` + `ollama pull gemma3:4b` | 83% recall · 17% FPR · +1.1 gap | $0 |
+| `ollama` | `glm-ocr` (local, 2.2 GB) | `ollama serve` + `ollama pull glm-ocr` | 33% recall · 33% FPR · +0.3 gap | $0 |
 | `mock` | heuristic stub | (auto fallback) | n/a — deterministic stub for CI smoke tests | $0 |
 
 ¹ Order-of-magnitude estimate per static review at the default 2 viewports. Flow review is one composite image per flow but the contact sheet is bigger. The Animation Tuner makes 0 LLM calls.
 
 ### How to pick
 
-- **Best quality, shipping.** OpenAI `gpt-5.5` — the only provider that hit 100% recall *and* 0% FPR.
+- **Best quality, hard CI gate.** OpenAI `gpt-5.5` — the only provider that hit 100% recall *and* 0% FPR.
 - **Best Anthropic value.** Anthropic `claude-sonnet-4-6` ties Opus 4.7 on recall and FPR (both 100% / 8%) and is **5× cheaper per token**. Pass `--model claude-opus-4-7` for the Opus tier; otherwise Sonnet 4.6.
+- **Best local quality (NEW).** Ollama `nemotron3:33b` — first local model at 100% recall, ties Sonnet 4.6 on score gap. 25% FPR keeps it out of hard CI gates, but it's the right pick for iteration loops and air-gapped reviews when you have ≥32 GB unified memory and don't want to pay per-call.
 - **Cost-sensitive CI.** Google `gemini-3.1-pro-preview` — 5× cheaper than Anthropic Sonnet, ~3× faster, 0% FPR, missed one broken pattern. Run the stress test on your own flows before relying on it as a hard merge gate.
-- **Offline / no-network / iteration loops.** Ollama with `gemma3:4b`. Local, free, no rate limits, but the higher FPR (2 of 12 clean implementations got hallucinated criticals) means it's not safe as a CI gate.
+- **Lightweight local.** Ollama `gemma3:4b` (3.3 GB). 83% recall, 17% FPR. Use when nemotron3:33b doesn't fit in memory or when you need faster turn-around per fixture.
+- **Skip:** Ollama `glm-ocr` is OCR-tuned and too weak for general design review (33% recall / 33% FPR).
 
 ### Switching providers
 

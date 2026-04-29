@@ -13,3 +13,6 @@ test-results/
 # personal working notes
 DEMO_PLAN.md
 PRD-motionlint.md
+
+# Claude Code local state
+.claude/
