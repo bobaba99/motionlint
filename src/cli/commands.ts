@@ -81,7 +81,7 @@ export function buildProgram(): Command {
     .option("-u, --url <url>", "Base URL for the flow (required for inline --steps).")
     .option("-s, --steps <dsl>", "Inline flow DSL: semicolon-separated steps. e.g. \"navigate /signup; type input#email=ada@example.com; click button[type=submit]; wait 2000; capture\".")
     .option("--spec <path>", "Path to a flow spec JSON file (alternative to --steps).")
-    .option("--name <name>", "Human label for this flow (used in the report filename).", "flow")
+    .option("--name <name>", "Human label for this flow (used in the report filename). Defaults to the spec's name.")
     .option("--provider <name>", "Provider override (auto|ollama|anthropic|openai|google|mock).")
     .option("--model <name>", "Model override.")
     .option("--consistency <n>", "Self-consistency samples (1=off, 3=recommended for harder flows).", "1")
@@ -93,7 +93,7 @@ export function buildProgram(): Command {
     .option("--interval <ms>", "Inter-frame burst interval in ms. Default 50 (sub-100ms human-detection threshold; below industry-typical 100ms minimum).", "50")
     .option("--burst-ms <ms>", "Burst window per step in ms. Default 750 (with --interval 50 → 16 frames per step).", "750")
     .option("--auto-interval", "Scan animations on the page first and pick an interval that captures the shortest animation cleanly (4 frames during it). Falls back to --interval if scan finds nothing.", false)
-    .option("-o, --output <path>", "Markdown report path.", ".motionlint/flows/flow.md")
+    .option("-o, --output <path>", "Markdown report path. Default: .motionlint/flows/<flow-name>.md.")
     .option("--embed", "Embed the contact sheet inline in the markdown report.", false)
     .option("--ci", "Exit non-zero when any critical finding is reported.", false)
     .option("--quiet", "Suppress per-step progress output.", false)
@@ -157,28 +157,31 @@ interface FlowCliOptions {
 async function runFlowCommand(opts: FlowCliOptions): Promise<void> {
   const { runFlow } = await import("../flow/runner.js");
   const { renderFlowMarkdownReport } = await import("../flow/report.js");
-  const { loadFlowSpec } = await import("../flow/spec.js");
+  const { loadFlowSpec, resolveFlowOverrides } = await import("../flow/spec.js");
   const { mkdir, writeFile } = await import("node:fs/promises");
   const { dirname: dn, resolve: resolvePath } = await import("node:path");
 
   const specSource = opts.spec ?? opts.steps;
   if (!specSource) throw new Error("Provide either --spec <path> or --steps <inline DSL>.");
-  const spec = await loadFlowSpec(specSource, opts.url);
-  if (opts.name) spec.name = opts.name;
+  const parsed = await loadFlowSpec(specSource, opts.url);
+  const { spec: named, outputPath } = resolveFlowOverrides(parsed, { name: opts.name, output: opts.output });
 
   // Burst-interval resolution: spec value (if any) > --auto-interval scan > --interval flag > 50ms.
   const cliInterval = Math.max(20, Math.min(500, Number(opts.interval ?? 50)));
   const cliBurstMs = Math.max(120, Number(opts.burstMs ?? 750));
+  let scannedInterval: number | undefined;
   if (opts.autoInterval) {
     const { recommendIntervalMs } = await import("../flow/auto_interval.js");
-    if (!opts.quiet) console.error(kleur.gray(`  scanning ${spec.url} for animations…`));
-    const rec = await recommendIntervalMs(spec.url);
+    if (!opts.quiet) console.error(kleur.gray(`  scanning ${named.url} for animations…`));
+    const rec = await recommendIntervalMs(named.url);
     if (!opts.quiet) console.error(kleur.gray(`  ${rec.reasoning}`));
-    spec.burst_interval_ms = spec.burst_interval_ms ?? rec.interval_ms;
-  } else {
-    spec.burst_interval_ms = spec.burst_interval_ms ?? cliInterval;
+    scannedInterval = rec.interval_ms;
   }
-  spec.burst_ms = spec.burst_ms ?? cliBurstMs;
+  const spec = {
+    ...named,
+    burst_interval_ms: named.burst_interval_ms ?? scannedInterval ?? cliInterval,
+    burst_ms: named.burst_ms ?? cliBurstMs,
+  };
 
   if (!opts.quiet) console.error(kleur.cyan(`→ Running flow "${spec.name}" against ${spec.url} (${spec.steps.length} steps, ${spec.burst_interval_ms}ms intervals × ${spec.burst_ms}ms window)`));
 
@@ -218,7 +221,7 @@ async function runFlowCommand(opts: FlowCliOptions): Promise<void> {
     },
   });
 
-  const outPath = resolvePath(opts.output ?? ".motionlint/flows/flow.md");
+  const outPath = resolvePath(outputPath);
   await mkdir(dn(outPath), { recursive: true });
   await writeFile(outPath, renderFlowMarkdownReport(report, { reportDir: dn(outPath), embedSheet: opts.embed ?? false }), "utf8");
   console.error(kleur.green(`  report → ${outPath}`));

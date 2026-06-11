@@ -5,9 +5,10 @@ import { mkdir, mkdtemp, rm, stat } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { ensureDir, runFlow } from "../src/flow/runner.js";
 import { renderFlowMarkdownReport } from "../src/flow/report.js";
-import { parseInlineSteps, loadFlowSpec } from "../src/flow/spec.js";
+import { parseInlineSteps, loadFlowSpec, resolveFlowOverrides } from "../src/flow/spec.js";
+import { buildProgram } from "../src/cli/commands.js";
 import { buildContactSheet } from "../src/capture/contact_sheet.js";
-import type { CapturedFrame } from "../src/flow/types.js";
+import type { CapturedFrame, FlowSpec } from "../src/flow/types.js";
 
 const DEMO_URL = process.env.UXV_DEMO_URL ?? "http://localhost:4173/";
 
@@ -34,6 +35,59 @@ describe("flow spec parser", () => {
     assert.equal(spec.name, "loading-state-feedback");
     assert.ok(spec.steps.length >= 3);
     assert.ok(Array.isArray(spec.expected_animations));
+  });
+});
+
+describe("flow CLI overrides", () => {
+  const baseSpec: FlowSpec = {
+    name: "signup-happy-path",
+    url: "http://localhost:4173/signup",
+    steps: [{ do: "capture" }],
+  };
+
+  it("keeps the spec's own name when --name is not passed", () => {
+    const { spec } = resolveFlowOverrides(baseSpec, {});
+    assert.equal(spec.name, "signup-happy-path");
+  });
+
+  it("lets an explicitly passed --name override the spec's name", () => {
+    const { spec } = resolveFlowOverrides(baseSpec, { name: "smoke-check" });
+    assert.equal(spec.name, "smoke-check");
+  });
+
+  it("derives the default report path from the flow name slug", () => {
+    const { outputPath } = resolveFlowOverrides({ ...baseSpec, name: "Signup Happy Path!" }, {});
+    assert.equal(outputPath, ".motionlint/flows/signup-happy-path.md");
+  });
+
+  it("gives flows with different names different default report paths", () => {
+    const a = resolveFlowOverrides({ ...baseSpec, name: "signup" }, {});
+    const b = resolveFlowOverrides({ ...baseSpec, name: "loading-state-feedback" }, {});
+    assert.equal(a.outputPath, ".motionlint/flows/signup.md");
+    assert.equal(b.outputPath, ".motionlint/flows/loading-state-feedback.md");
+    assert.notEqual(a.outputPath, b.outputPath);
+  });
+
+  it("honors an explicitly passed -o path verbatim", () => {
+    const { outputPath } = resolveFlowOverrides(baseSpec, { name: "smoke-check", output: "reports/custom.md" });
+    assert.equal(outputPath, "reports/custom.md");
+  });
+
+  it("returns a new spec object instead of mutating the parsed one", () => {
+    const { spec } = resolveFlowOverrides(baseSpec, { name: "renamed" });
+    assert.notEqual(spec, baseSpec);
+    assert.equal(baseSpec.name, "signup-happy-path");
+  });
+});
+
+describe("flow command CLI wiring", () => {
+  it("does not pin --name or -o to fixed defaults that clobber per-flow reports", () => {
+    const flow = buildProgram().commands.find((c) => c.name() === "flow");
+    assert.ok(flow, "flow command should exist");
+    const nameOpt = flow.options.find((o) => o.long === "--name");
+    const outputOpt = flow.options.find((o) => o.long === "--output");
+    assert.equal(nameOpt?.defaultValue, undefined, "--name must not default to a fixed value or it overwrites the spec's name");
+    assert.equal(outputOpt?.defaultValue, undefined, "-o must not default to a fixed path or every flow writes the same report");
   });
 });
 

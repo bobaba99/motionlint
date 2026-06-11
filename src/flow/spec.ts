@@ -92,3 +92,31 @@ export async function loadFlowSpec(pathOrInline: string, fallbackUrl?: string): 
   const steps = parseInlineSteps(trimmed);
   return { name: "flow", url: fallbackUrl, steps };
 }
+
+/** Filesystem-safe slug for a flow name, used for contact-sheet and report filenames. */
+export function flowSlug(name: string): string {
+  return name.replace(/[^a-z0-9]+/gi, "-").toLowerCase().replace(/^-+|-+$/g, "") || "flow";
+}
+
+export interface FlowCliOverrides {
+  /** --name, only when explicitly passed on the CLI. */
+  name?: string;
+  /** -o/--output, only when explicitly passed on the CLI. */
+  output?: string;
+}
+
+/**
+ * Applies CLI overrides to a parsed spec without mutating it and resolves the
+ * report path: an explicit --output wins; otherwise each flow gets its own
+ * .motionlint/flows/<slug>.md so runs of different flows never clobber each other.
+ */
+export function resolveFlowOverrides(
+  spec: FlowSpec,
+  overrides: FlowCliOverrides,
+): { spec: FlowSpec; outputPath: string } {
+  const name = overrides.name || spec.name;
+  return {
+    spec: { ...spec, name },
+    outputPath: overrides.output ?? `.motionlint/flows/${flowSlug(name)}.md`,
+  };
+}

@@ -5,6 +5,7 @@ import { runFlowCapture } from "../capture/flow_capture.js";
 import { buildFlowPrompt } from "../analysis/flow_prompt.js";
 import { resolveProvider } from "../providers/resolver.js";
 import { SelfConsistencyProvider } from "../providers/consistency.js";
+import { flowSlug } from "./spec.js";
 import type { FlowSpec, FlowReport } from "./types.js";
 
 export interface RunFlowOptions {
@@ -39,10 +40,6 @@ export type FlowProgress =
 export async function ensureDir(p: string | undefined): Promise<string | undefined> {
   if (p) await mkdir(p, { recursive: true });
   return p;
-}
-
-function flowSlug(name: string): string {
-  return name.replace(/[^a-z0-9]+/gi, "-").toLowerCase().replace(/^-+|-+$/g, "") || "flow";
 }
 
 export async function runFlow(opts: RunFlowOptions): Promise<FlowReport> {

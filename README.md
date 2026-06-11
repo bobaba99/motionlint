@@ -67,9 +67,9 @@ $ motionlint flow --spec flows/signup.json --provider anthropic
   capturing flow…
   ✓ step 1: 16 frames    ✓ step 2: 16 frames    ✓ step 3: 16 frames    …
   captured 176 frames in 31s
-  contact sheet → .motionlint/flows/signup-…png
+  contact sheet → .motionlint/flows/signup-happy-path-…png
   analyzing flow…
-  report → .motionlint/flows/signup.md
+  report → .motionlint/flows/signup-happy-path.md
 
 Score: 4/10 · 3 critical findings
   [critical] interaction — input focus rings missing across steps 2/4/6
