@@ -52,7 +52,7 @@ export async function resolveProvider(opts: ResolveProviderOptions = {}): Promis
   }
 
   for (const name of AUTO_ORDER) {
-    const candidate = instantiate(name, name === requested ? (opts.model ?? null) : null);
+    const candidate = instantiate(name, opts.model ?? null);
     if (await candidate.isAvailable()) return candidate;
   }
 
