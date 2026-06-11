@@ -1,5 +1,5 @@
 import { mkdir, readFile, writeFile } from "node:fs/promises";
-import { dirname, join, isAbsolute, relative } from "node:path";
+import { join, isAbsolute, relative } from "node:path";
 import { buildContactSheet } from "../capture/contact_sheet.js";
 import { runFlowCapture } from "../capture/flow_capture.js";
 import { buildFlowPrompt } from "../analysis/flow_prompt.js";
@@ -124,10 +124,3 @@ export function relPath(target: string | undefined, fromDir: string): string | u
   if (!isAbsolute(target)) return target;
   return relative(fromDir, target) || target;
 }
-
-export function reportFilenameForFlow(spec: FlowSpec, ext: string): string {
-  const stamp = new Date().toISOString().replace(/[:.]/g, "-");
-  return `flow-${flowSlug(spec.name)}-${stamp}.${ext}`;
-}
-
-export { dirname };
