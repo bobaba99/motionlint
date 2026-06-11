@@ -1,9 +1,10 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
-import { mkdir, writeFile } from "node:fs/promises";
+import { writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import { extractAnimations } from "../src/tuner/extract.js";
 import { renderTunerHTML } from "../src/tuner/render.js";
+import { sampleOutDir } from "./sample-output.js";
 
 const DEMO_URL = process.env.UXV_DEMO_URL ?? "http://localhost:4173/";
 
@@ -39,8 +40,7 @@ describe("Animation Tuner", () => {
     assert.match(html, /<input type="range"/);
     assert.match(html, /<select data-anim=/);
 
-    const out = resolve("eval/results/sample-tuner.html");
-    await mkdir(resolve("eval/results"), { recursive: true });
+    const out = resolve(await sampleOutDir(), "sample-tuner.html");
     await writeFile(out, html, "utf8");
   });
 });

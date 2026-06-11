@@ -20,9 +20,11 @@ node demo/server.mjs &
 UXV_DEMO_URL=http://localhost:4173/ npm test
 ```
 
+The suite writes sample artifacts (`sample-mock-eval.*`, `sample-tuner.html`) to the gitignored `.motionlint/test-samples/`, so a test run leaves the working tree clean. To refresh the committed copies in `eval/results/`, run `UPDATE_SAMPLES=1 npm test`.
+
 ## What changes need
 
-- **Type-check + tests must pass** — `npx tsc` clean and `npm test` green (currently 25/25).
+- **Type-check + tests must pass** — `npx tsc` clean and `npm test` green (currently 39/39).
 - **No regressions on the eval harness** — see [PRD §18.6](PRD-motionlint.md). If you change `src/analysis/prompt.ts`, `src/providers/*`, or scoring, run the eval and confirm L1 recall doesn't drop more than 5pp and L2 not more than 10pp.
 - **Conventional commit messages** — `feat:`, `fix:`, `refactor:`, `docs:`, `test:`, `chore:`.
 - **No secrets in PRs** — `.env` is gitignored; never paste API keys into issues or tests.
