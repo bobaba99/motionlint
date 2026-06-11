@@ -36,7 +36,8 @@ export type FlowProgress =
   | { type: "analysis_started" }
   | { type: "analysis_finished" };
 
-function ensureDir(p: string | undefined): string | undefined {
+export async function ensureDir(p: string | undefined): Promise<string | undefined> {
+  if (p) await mkdir(p, { recursive: true });
   return p;
 }
 
@@ -60,7 +61,7 @@ export async function runFlow(opts: RunFlowOptions): Promise<FlowReport> {
   opts.onProgress?.({ type: "capture_started" });
   const capture = await runFlowCapture({
     spec: opts.spec,
-    videoDir: ensureDir(videoDir),
+    videoDir: await ensureDir(videoDir),
     captureAfterEveryInteraction: !opts.noImplicitBursts,
     burstFullPage: opts.burstFullPage ?? false,
     burstStrategy: opts.burstStrategy ?? "screencast",

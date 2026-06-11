@@ -1,8 +1,9 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
-import { resolve } from "node:path";
-import { mkdir } from "node:fs/promises";
-import { runFlow } from "../src/flow/runner.js";
+import { join, resolve } from "node:path";
+import { mkdir, mkdtemp, rm, stat } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { ensureDir, runFlow } from "../src/flow/runner.js";
 import { renderFlowMarkdownReport } from "../src/flow/report.js";
 import { parseInlineSteps, loadFlowSpec } from "../src/flow/spec.js";
 import { buildContactSheet } from "../src/capture/contact_sheet.js";
@@ -33,6 +34,34 @@ describe("flow spec parser", () => {
     assert.equal(spec.name, "loading-state-feedback");
     assert.ok(spec.steps.length >= 3);
     assert.ok(Array.isArray(spec.expected_animations));
+  });
+});
+
+describe("ensureDir", () => {
+  it("creates a missing directory (recursively) and returns the path", async () => {
+    const base = await mkdtemp(join(tmpdir(), "motionlint-ensuredir-"));
+    try {
+      const target = join(base, "nested", "videos");
+      const result = await ensureDir(target);
+      assert.equal(result, target);
+      const created = await stat(target).then((s) => s.isDirectory(), () => false);
+      assert.ok(created, "ensureDir should create the directory so recordings can be written into it");
+    } finally {
+      await rm(base, { recursive: true, force: true });
+    }
+  });
+
+  it("is a no-op when the directory already exists", async () => {
+    const base = await mkdtemp(join(tmpdir(), "motionlint-ensuredir-"));
+    try {
+      assert.equal(await ensureDir(base), base);
+    } finally {
+      await rm(base, { recursive: true, force: true });
+    }
+  });
+
+  it("passes undefined through unchanged", async () => {
+    assert.equal(await ensureDir(undefined), undefined);
   });
 });
 
