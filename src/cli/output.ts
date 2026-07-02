@@ -22,6 +22,14 @@ export function summarize(report: ReviewReport): string {
     `${severityColor("warning", `${report.warning_count} warning`)} · ` +
     `${severityColor("suggestion", `${report.suggestion_count} suggestion`)}`,
   );
+  const omittedParts = [
+    report.omitted.by_cap > 0 ? `${report.omitted.by_cap} over the output cap` : null,
+    report.omitted.by_baseline > 0 ? `${report.omitted.by_baseline} baselined` : null,
+    report.omitted.by_memory > 0 ? `${report.omitted.by_memory} previously seen` : null,
+  ].filter(Boolean);
+  if (omittedParts.length > 0) {
+    lines.push(kleur.dim(`Omitted: ${omittedParts.join(" · ")}`));
+  }
   lines.push("");
 
   for (const entry of report.analyses) {

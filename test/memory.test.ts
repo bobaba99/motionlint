@@ -290,6 +290,23 @@ describe("reporter surfacing of memory annotations", () => {
     assert.ok(!renderMarkdownReport(annotatedReport()).includes("**Omitted:**"));
   });
 
+  it("terminal summary shows the Omitted line when findings were removed", async () => {
+    const { summarize } = await import("../src/cli/output.js");
+    const store = recordFindings(emptyStore(), "http://a/", [issue()], "2026-07-01T00:00:00Z");
+    const filtered = applyMemory({
+      analyses: [entryWith([issue()])],
+      url: "http://a/",
+      baseline: new Set(),
+      store,
+      newOnly: true,
+    });
+    const report = aggregate("http://a/", "mock", "m", filtered.analyses, {
+      omitted: { by_baseline: filtered.by_baseline, by_memory: filtered.by_memory },
+    });
+    assert.ok(summarize(report).includes("Omitted:"), "terminal summary must explain removed findings");
+    assert.ok(!summarize(annotatedReport()).includes("Omitted:"));
+  });
+
   it("sarif carries the finding hash as a partial fingerprint", () => {
     const sarif = JSON.parse(renderSarifReport(annotatedReport()));
     const result = sarif.runs[0].results[0];
