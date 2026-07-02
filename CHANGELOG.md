@@ -7,7 +7,7 @@ All notable changes to MotionLint will be documented here. Format follows [Keep 
 ### Added
 
 - **Per-run output cap** — `--max-findings N` / `maxFindings` config / `max_findings` MCP param keeps only the top N findings per run, severity-ordered, for agent focus. Reports carry an `omitted` counts block.
-- **Cross-run memory** — findings get a stable id (category + element location + normalized issue text); sightings are recorded per URL in `.motionlint/memory.json`. Recurring findings are annotated with "seen in N prior runs"; `--new-only` / `new_only` reports only new findings; `.motionlintignore` baselines finding ids permanently; `--no-memory` disables the layer. SARIF output carries the id as a `partialFingerprint` for GitHub code-scanning dedup.
+- **Cross-run memory** — findings get a stable id (category + element location + normalized issue text); sightings are recorded per URL in `.motionlint/memory.json`. Recurrence detection uses fuzzy matching (category-synonym compatibility + canonical-token overlap, calibrated on real cross-run data) so LLM rewording between runs still counts as the same finding. Recurring findings are annotated with "seen in N prior runs"; `--new-only` / `new_only` reports only new findings; `.motionlintignore` baselines finding ids permanently (rewordings of a baselined finding stay suppressed); `--no-memory` disables the layer. SARIF output carries the id as a `partialFingerprint` for GitHub code-scanning dedup.
 
 ## [0.1.0] — 2026-04-27
 

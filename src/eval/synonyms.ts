@@ -153,3 +153,8 @@ export function issueClusterSignature(category: string, issueText: string): stri
   const tokens = canonicalize(tokenize(issueText)).slice(0, 3).sort();
   return `${category}::${tokens.join(" ")}`;
 }
+
+/** Stopword-filtered, synonym-canonicalized token set — the shared vocabulary for fuzzy matching. */
+export function canonicalTokens(s: string): Set<string> {
+  return new Set(canonicalize(tokenize(s)));
+}

@@ -2,6 +2,7 @@ import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { dirname } from "node:path";
 import type { UXIssue } from "../types.js";
 import { findingHash } from "./hash.js";
+import { findingsMatch } from "./match.js";
 
 export interface MemoryEntry {
   first_seen: string;
@@ -45,10 +46,37 @@ export function seenCount(store: MemoryStore, url: string, hash: string): number
   return store.urls[url]?.[hash]?.seen_count ?? 0;
 }
 
+function resolveHash(forUrl: Record<string, MemoryEntry>, issue: UXIssue): string {
+  const exact = findingHash(issue);
+  if (forUrl[exact]) return exact;
+  for (const [hash, entry] of Object.entries(forUrl)) {
+    if (findingsMatch(issue, entry)) return hash;
+  }
+  return exact;
+}
+
+/**
+ * Finds the stored entry this issue corresponds to: exact hash first, then a
+ * fuzzy phrasing match (see match.ts). Returns the entry's canonical hash —
+ * the id reports print and baseline files reference.
+ */
+export function findMatch(
+  store: MemoryStore,
+  url: string,
+  issue: UXIssue,
+): { hash: string; entry: MemoryEntry } | null {
+  const forUrl = store.urls[url];
+  if (!forUrl) return null;
+  const hash = resolveHash(forUrl, issue);
+  const entry = forUrl[hash];
+  return entry ? { hash, entry } : null;
+}
+
 /**
  * Returns a new store with this run's findings recorded for `url` (the input
- * store is untouched). Each hash counts at most once per run, mirroring the
- * self-consistency rule of not double-counting within a single run.
+ * store is untouched). Rephrased recurrences merge into their matched entry;
+ * each entry counts at most once per run, mirroring the self-consistency rule
+ * of not double-counting within a single run.
  */
 export function recordFindings(
   store: MemoryStore,
@@ -56,10 +84,14 @@ export function recordFindings(
   issues: UXIssue[],
   timestamp: string,
 ): MemoryStore {
-  const forUrl = { ...(store.urls[url] ?? {}) };
+  // Fuzzy resolution runs against the pre-run snapshot only: entries created
+  // by this run must not absorb later findings from the same run, or two
+  // distinct-but-similar findings silently collapse into one.
+  const snapshot = store.urls[url] ?? {};
+  const forUrl = { ...snapshot };
   const countedThisRun = new Set<string>();
   for (const issue of issues) {
-    const hash = findingHash(issue);
+    const hash = resolveHash(snapshot, issue);
     if (countedThisRun.has(hash)) continue;
     countedThisRun.add(hash);
     const prior = forUrl[hash];

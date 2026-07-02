@@ -1,6 +1,6 @@
 import type { AnalysisEntry, UXIssue } from "../types.js";
 import { findingHash } from "./hash.js";
-import { seenCount, type MemoryStore } from "./store.js";
+import { findMatch, type MemoryStore } from "./store.js";
 
 export interface MemoryFilterOptions {
   analyses: AnalysisEntry[];
@@ -32,12 +32,15 @@ export function applyMemory(opts: MemoryFilterOptions): MemoryFilterResult {
   const analyses = opts.analyses.map((entry) => {
     const kept: UXIssue[] = [];
     for (const issue of entry.analysis.issues) {
-      const hash = findingHash(issue);
-      if (opts.baseline.has(hash)) {
+      // Canonical id = the stored entry's hash when this is a (possibly
+      // rephrased) recurrence, so baselines keep matching across rewordings.
+      const match = findMatch(opts.store, opts.url, issue);
+      const hash = match?.hash ?? findingHash(issue);
+      if (opts.baseline.has(hash) || opts.baseline.has(findingHash(issue))) {
         byBaseline++;
         continue;
       }
-      const previouslySeen = seenCount(opts.store, opts.url, hash);
+      const previouslySeen = match?.entry.seen_count ?? 0;
       if (opts.newOnly && previouslySeen > 0) {
         byMemory++;
         continue;

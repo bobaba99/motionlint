@@ -98,6 +98,119 @@ describe("findingHash", () => {
   });
 });
 
+describe("findingsMatch (fuzzy recurrence)", () => {
+  // Real pairs observed across live vision-LLM runs — same fault, different phrasing.
+  it("matches the same fault described differently across runs", async () => {
+    const { findingsMatch } = await import("../src/memory/match.js");
+    assert.ok(findingsMatch(
+      {
+        category: "loading_state",
+        location: "Testimonials section below 'Loved by teams...' heading",
+        issue: "The testimonials section has a heading and subtext but no actual testimonial cards, quotes, or avatars rendered.",
+      },
+      {
+        category: "content",
+        location: "Testimonials section below 'Loved by teams...' heading",
+        issue: "The section heading and subcopy explicitly state 'Sample testimonials below' but no testimonials are rendered.",
+      },
+    ));
+    assert.ok(findingsMatch(
+      {
+        category: "spacing",
+        location: "Gap between hero CTA area and 'Everything you need' section",
+        issue: "There is a very large empty vertical gap (roughly 400-500px) between sections.",
+      },
+      {
+        category: "spacing",
+        location: "Between hero section and 'Everything you need to move fast' heading",
+        issue: "There is a very large empty vertical gap (roughly 250-300px) with no content.",
+      },
+    ));
+  });
+
+  it("does not match distinct findings that merely share a category", async () => {
+    const { findingsMatch } = await import("../src/memory/match.js");
+    assert.ok(!findingsMatch(
+      {
+        category: "contrast",
+        location: "Faded 'Lottie + JSON' card text and icon",
+        issue: "Text and icon in the ghosted card fall well below 4.5:1 contrast against the dark background.",
+      },
+      {
+        category: "typography",
+        location: "Hero subheading paragraph",
+        issue: "Paragraph text wraps at a wide measure exceeding the 75ch line-length guideline.",
+      },
+    ));
+  });
+
+  it("requires compatible categories even with token overlap", async () => {
+    const { findingsMatch } = await import("../src/memory/match.js");
+    assert.ok(!findingsMatch(
+      { category: "color", location: "feature card grid", issue: "Feature card grid colors clash with the brand palette badly here." },
+      { category: "navigation", location: "feature card grid", issue: "Feature card grid colors clash with the brand palette badly here." },
+    ));
+  });
+});
+
+describe("fuzzy recurrence through store and filter", () => {
+  const original: UXIssue = issue({
+    category: "loading_state",
+    location: "Testimonials section below 'Loved by teams...' heading",
+    issue: "The testimonials section has a heading and subtext but no actual testimonial cards, quotes, or avatars rendered.",
+  });
+  const rephrased: UXIssue = issue({
+    category: "content",
+    location: "Testimonials section below 'Loved by teams...' heading",
+    issue: "The section heading and subcopy explicitly state 'Sample testimonials below' but no testimonials are rendered.",
+  });
+
+  it("recordFindings increments the matched entry instead of creating a duplicate", () => {
+    const s1 = recordFindings(emptyStore(), "http://a/", [original], "2026-07-01T00:00:00Z");
+    const s2 = recordFindings(s1, "http://a/", [rephrased], "2026-07-02T00:00:00Z");
+    const entries = Object.entries(s2.urls["http://a/"]);
+    assert.equal(entries.length, 1, "rephrased recurrence must merge into the existing entry");
+    assert.equal(entries[0][1].seen_count, 2);
+  });
+
+  it("does not collapse similar findings observed within the same run", () => {
+    // Fuzzy resolution must run against the pre-run store, not entries created
+    // moments earlier in the same loop — otherwise the second finding is
+    // silently dropped and permanently conflated with the first.
+    const s1 = recordFindings(emptyStore(), "http://a/", [original, rephrased], "2026-07-01T00:00:00Z");
+    const entries = Object.values(s1.urls["http://a/"]);
+    assert.equal(entries.length, 2, "same-run similar findings must keep their own entries");
+    assert.ok(entries.every((e) => e.seen_count === 1));
+  });
+
+  it("applyMemory annotates a rephrased recurrence with the canonical id", () => {
+    const s1 = recordFindings(emptyStore(), "http://a/", [original], "2026-07-01T00:00:00Z");
+    const result = applyMemory({
+      analyses: [entryWith([rephrased])],
+      url: "http://a/",
+      baseline: new Set(),
+      store: s1,
+      newOnly: false,
+    });
+    const annotated = result.analyses[0].analysis.issues[0];
+    assert.equal(annotated.hash, findingHash(original), "must carry the stored canonical id");
+    assert.equal(annotated.previously_seen, 1);
+  });
+
+  it("baseline on the canonical id suppresses rephrased recurrences", () => {
+    const s1 = recordFindings(emptyStore(), "http://a/", [original], "2026-07-01T00:00:00Z");
+    const result = applyMemory({
+      analyses: [entryWith([rephrased])],
+      url: "http://a/",
+      baseline: new Set([findingHash(original)]),
+      store: s1,
+      newOnly: true,
+    });
+    assert.equal(result.analyses[0].analysis.issues.length, 0);
+    assert.equal(result.by_baseline, 1);
+  });
+});
+
 describe("loadBaseline", () => {
   it("returns an empty set for a missing file", async () => {
     const dir = await scratchDir();
