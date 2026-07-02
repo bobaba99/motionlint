@@ -19,6 +19,7 @@ const DEFAULT_CONFIG: MotionLintConfig = {
   reportDir: ".motionlint/reports",
   rules: null,
   record: false,
+  maxFindings: null,
   ci: { threshold: "warning", failOnCritical: true },
   auth: { cookies: null, localStorage: null, beforeNavigate: null },
 };

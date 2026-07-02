@@ -29,6 +29,7 @@ const TOOLS = [
         wait_for: { type: "string", description: "CSS selector or 'networkidle' to wait for before capture." },
         record: { type: "boolean", description: "Record a video of the capture." },
         format: { type: "string", enum: ["md", "json", "sarif"], description: "Output format (default: md)." },
+        max_findings: { type: "number", description: "Keep only the top N findings, severity-ordered (agent focus)." },
       },
       required: ["url"],
     },
@@ -45,6 +46,7 @@ const TOOLS = [
         provider: { type: "string" },
         model: { type: "string" },
         format: { type: "string", enum: ["md", "json", "sarif"] },
+        max_findings: { type: "number", description: "Keep only the top N findings per route, severity-ordered." },
       },
       required: ["base_url", "routes"],
     },
@@ -107,6 +109,7 @@ interface ReviewUrlArgs {
   wait_for?: string;
   record?: boolean;
   format?: OutputFormat;
+  max_findings?: number;
 }
 
 interface ReviewRoutesArgs {
@@ -116,6 +119,7 @@ interface ReviewRoutesArgs {
   provider?: string;
   model?: string;
   format?: OutputFormat;
+  max_findings?: number;
 }
 
 interface ReviewFlowArgs {
@@ -153,6 +157,7 @@ async function handleReviewUrl(args: ReviewUrlArgs) {
     viewports: args.viewports,
     record: args.record ?? false,
     format: args.format ?? "md",
+    maxFindings: args.max_findings,
   });
   lastReport = { rendered: result.rendered, format: result.format, report: result.report, path: result.reportPath };
   return result;
@@ -169,6 +174,7 @@ async function handleReviewRoutes(args: ReviewRoutesArgs) {
       provider: args.provider,
       model: args.model,
       format: args.format ?? "md",
+      max_findings: args.max_findings,
     });
     renderedParts.push(result.rendered);
     last = { report: result.report, path: result.reportPath, format: result.format };

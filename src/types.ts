@@ -78,6 +78,16 @@ export interface AnalysisEntry {
   analysis: AnalysisResult;
 }
 
+/** Findings removed from the report before rendering, by mechanism. */
+export interface OmittedCounts {
+  /** Dropped by the per-run output cap (maxFindings). */
+  by_cap: number;
+  /** Suppressed because their hash is listed in the baseline file. */
+  by_baseline: number;
+  /** Dropped as previously-seen recurrences (newOnly mode). */
+  by_memory: number;
+}
+
 export interface ReviewReport {
   timestamp: string;
   url: string;
@@ -88,6 +98,7 @@ export interface ReviewReport {
   critical_count: number;
   warning_count: number;
   suggestion_count: number;
+  omitted: OmittedCounts;
 }
 
 export interface VisionProvider {
@@ -127,6 +138,8 @@ export interface MotionLintConfig {
   reportDir: string;
   rules: string | null;
   record: boolean;
+  /** Per-run output cap: keep only the top N findings, severity-ordered. null = uncapped. */
+  maxFindings: number | null;
   ci: CIConfig;
   auth: AuthConfig;
 }

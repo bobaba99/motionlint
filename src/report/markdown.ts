@@ -44,6 +44,14 @@ export function renderMarkdownReport(report: ReviewReport, opts: MarkdownOptions
   lines.push(`- **Provider:** ${report.provider} (${report.model})`);
   lines.push(`- **Aggregate score:** ${report.aggregate_score}/10`);
   lines.push(`- **Issues:** 🚨 ${report.critical_count} critical · ⚠️ ${report.warning_count} warning · 💡 ${report.suggestion_count} suggestion`);
+  const omittedParts = [
+    report.omitted.by_cap > 0 ? `${report.omitted.by_cap} over the output cap` : null,
+    report.omitted.by_baseline > 0 ? `${report.omitted.by_baseline} baselined` : null,
+    report.omitted.by_memory > 0 ? `${report.omitted.by_memory} previously seen` : null,
+  ].filter(Boolean);
+  if (omittedParts.length > 0) {
+    lines.push(`- **Omitted:** ${omittedParts.join(" · ")}`);
+  }
   lines.push("");
 
   if (report.analyses.length === 0) {

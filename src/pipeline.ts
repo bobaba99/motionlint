@@ -32,6 +32,8 @@ export interface RunReviewOptions {
   format?: OutputFormat;
   outputPath?: string | null;
   embedScreenshots?: boolean;
+  /** Per-run output cap override; falls back to config.maxFindings. */
+  maxFindings?: number | null;
   onProgress?: (event: ProgressEvent) => void;
 }
 
@@ -123,7 +125,9 @@ export async function runReview(opts: RunReviewOptions): Promise<RunReviewResult
     onProgress?.({ type: "analyze_done", viewport: capture.viewport, entry });
   }
 
-  const report = aggregate(url, provider.name, provider.model, analyses);
+  const report = aggregate(url, provider.name, provider.model, analyses, {
+    maxFindings: opts.maxFindings !== undefined ? opts.maxFindings : config.maxFindings,
+  });
 
   const format: OutputFormat = opts.format ?? "md";
   let rendered: string;

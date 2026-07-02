@@ -40,6 +40,7 @@ export function buildProgram(): Command {
     .option("--interactions <spec>", "Path to a file or inline JSON with interaction steps.")
     .option("--ci", "Exit with non-zero code if issues exceed the configured threshold.", false)
     .option("--threshold <severity>", `CI severity threshold: ${VALID_SEVERITIES.join("|")}.`)
+    .option("--max-findings <n>", "Keep only the top N findings per run, severity-ordered (agent focus).")
     .option("--quiet", "Suppress per-issue terminal output (still writes report file).", false)
     .action(async (url: string, opts: ReviewOptions) => {
       try {
@@ -379,6 +380,7 @@ interface ReviewOptions {
   interactions?: string;
   ci?: boolean;
   threshold?: string;
+  maxFindings?: string;
   quiet?: boolean;
 }
 
@@ -422,6 +424,15 @@ async function runReviewCommand(rawUrl: string, opts: ReviewOptions): Promise<vo
   }
   if (opts.threshold) config.ci.threshold = opts.threshold as IssueSeverity;
 
+  let maxFindings: number | undefined;
+  if (opts.maxFindings !== undefined) {
+    const n = Number(opts.maxFindings);
+    if (!Number.isInteger(n) || n < 1) {
+      throw new Error(`Invalid --max-findings: ${opts.maxFindings}. Use a positive integer.`);
+    }
+    maxFindings = n;
+  }
+
   const interactions = await readInteractions(opts.interactions);
   const targets = buildUrlList(rawUrl, opts.routes);
 
@@ -441,6 +452,7 @@ async function runReviewCommand(rawUrl: string, opts: ReviewOptions): Promise<vo
       format,
       outputPath: opts.output ?? undefined,
       embedScreenshots: opts.embed ?? false,
+      maxFindings,
       onProgress: (event) => {
         if (opts.quiet) return;
         switch (event.type) {
