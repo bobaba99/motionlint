@@ -5,7 +5,7 @@ const DEFAULT_CONFIG: MotionLintConfig = {
   provider: "auto",
   model: null,
   fallbackProvider: "anthropic",
-  fallbackModel: "claude-sonnet-4-20250514",
+  fallbackModel: "claude-sonnet-5",
   viewports: {
     mobile: { width: 375, height: 812 },
     tablet: { width: 768, height: 1024 },

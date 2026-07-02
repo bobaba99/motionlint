@@ -19,7 +19,7 @@ export class AnthropicProvider implements VisionProvider {
 
   constructor(opts: AnthropicProviderOptions = {}) {
     this.apiKey = opts.apiKey ?? process.env.ANTHROPIC_API_KEY;
-    this.model = opts.model ?? "claude-sonnet-4-20250514";
+    this.model = opts.model ?? "claude-sonnet-5";
     this.maxTokens = opts.maxTokens ?? 4096;
   }
 
