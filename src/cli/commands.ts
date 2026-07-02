@@ -376,7 +376,8 @@ interface ReviewOptions {
   model?: string;
   rules?: string;
   format?: string;
-  output?: string;
+  /** string from -o/--output; false from --no-output; undefined = default report dir */
+  output?: string | false;
   embed?: boolean;
   record?: boolean;
   fullPage?: boolean;
@@ -456,7 +457,7 @@ async function runReviewCommand(rawUrl: string, opts: ReviewOptions): Promise<vo
       fullPage: opts.fullPage ?? true,
       interactions,
       format,
-      outputPath: opts.output ?? undefined,
+      outputPath: opts.output === false ? null : opts.output ?? undefined,
       embedScreenshots: opts.embed ?? false,
       maxFindings,
       // commander defaults negated flags to true, so only an explicit --no-memory overrides config
