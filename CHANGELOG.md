@@ -2,6 +2,13 @@
 
 All notable changes to MotionLint will be documented here. Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follow [SemVer](https://semver.org/).
 
+## [Unreleased]
+
+### Added
+
+- **Per-run output cap** — `--max-findings N` / `maxFindings` config / `max_findings` MCP param keeps only the top N findings per run, severity-ordered, for agent focus. Reports carry an `omitted` counts block.
+- **Cross-run memory** — findings get a stable id (category + element location + normalized issue text); sightings are recorded per URL in `.motionlint/memory.json`. Recurring findings are annotated with "seen in N prior runs"; `--new-only` / `new_only` reports only new findings; `.motionlintignore` baselines finding ids permanently; `--no-memory` disables the layer. SARIF output carries the id as a `partialFingerprint` for GitHub code-scanning dedup.
+
 ## [0.1.0] — 2026-04-27
 
 Initial public release.

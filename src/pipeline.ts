@@ -4,6 +4,9 @@ import { captureScreenshot } from "./capture/screenshot.js";
 import { buildPrompt } from "./analysis/prompt.js";
 import { resolveProvider } from "./providers/resolver.js";
 import { aggregate } from "./report/aggregate.js";
+import { loadBaseline } from "./memory/baseline.js";
+import { applyMemory } from "./memory/filter.js";
+import { emptyStore, loadMemory, recordFindings, saveMemory, type MemoryStore } from "./memory/store.js";
 import { renderMarkdownReport } from "./report/markdown.js";
 import { renderJsonReport } from "./report/json.js";
 import { renderSarifReport } from "./report/sarif.js";
@@ -34,6 +37,12 @@ export interface RunReviewOptions {
   embedScreenshots?: boolean;
   /** Per-run output cap override; falls back to config.maxFindings. */
   maxFindings?: number | null;
+  /** Cross-run memory override; falls back to config.memory.enabled. */
+  memory?: boolean;
+  /** Baseline file override; falls back to config.memory.baseline. */
+  baselinePath?: string | null;
+  /** Report only findings not seen in prior runs; falls back to config.memory.newOnly. */
+  newOnly?: boolean;
   onProgress?: (event: ProgressEvent) => void;
 }
 
@@ -43,6 +52,7 @@ export type ProgressEvent =
   | { type: "capture_done"; capture: CaptureResult }
   | { type: "analyze_start"; viewport: Viewport }
   | { type: "analyze_done"; viewport: Viewport; entry: AnalysisEntry }
+  | { type: "memory_warning"; message: string }
   | { type: "report_written"; path: string; format: OutputFormat };
 
 export interface RunReviewResult {
@@ -125,8 +135,34 @@ export async function runReview(opts: RunReviewOptions): Promise<RunReviewResult
     onProgress?.({ type: "analyze_done", viewport: capture.viewport, entry });
   }
 
-  const report = aggregate(url, provider.name, provider.model, analyses, {
+  let reportAnalyses = analyses;
+  let memoryOmitted: { by_baseline: number; by_memory: number } | undefined;
+  if (opts.memory ?? config.memory.enabled) {
+    const baseline = await loadBaseline(opts.baselinePath ?? config.memory.baseline);
+    let store: MemoryStore;
+    try {
+      store = await loadMemory(config.memory.path);
+    } catch (err) {
+      // A corrupt store must not fail the review — warn and rebuild from this run.
+      onProgress?.({ type: "memory_warning", message: (err as Error).message });
+      store = emptyStore();
+    }
+    const filtered = applyMemory({
+      analyses,
+      url,
+      baseline,
+      store,
+      newOnly: opts.newOnly ?? config.memory.newOnly,
+    });
+    reportAnalyses = filtered.analyses;
+    memoryOmitted = { by_baseline: filtered.by_baseline, by_memory: filtered.by_memory };
+    const observed = analyses.flatMap((entry) => entry.analysis.issues);
+    await saveMemory(config.memory.path, recordFindings(store, url, observed, new Date().toISOString()));
+  }
+
+  const report = aggregate(url, provider.name, provider.model, reportAnalyses, {
     maxFindings: opts.maxFindings !== undefined ? opts.maxFindings : config.maxFindings,
+    omitted: memoryOmitted,
   });
 
   const format: OutputFormat = opts.format ?? "md";

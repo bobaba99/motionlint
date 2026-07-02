@@ -20,6 +20,12 @@ const DEFAULT_CONFIG: MotionLintConfig = {
   rules: null,
   record: false,
   maxFindings: null,
+  memory: {
+    enabled: true,
+    path: ".motionlint/memory.json",
+    baseline: ".motionlintignore",
+    newOnly: false,
+  },
   ci: { threshold: "warning", failOnCritical: true },
   auth: { cookies: null, localStorage: null, beforeNavigate: null },
 };

@@ -41,6 +41,9 @@ export function buildProgram(): Command {
     .option("--ci", "Exit with non-zero code if issues exceed the configured threshold.", false)
     .option("--threshold <severity>", `CI severity threshold: ${VALID_SEVERITIES.join("|")}.`)
     .option("--max-findings <n>", "Keep only the top N findings per run, severity-ordered (agent focus).")
+    .option("--baseline <path>", "Baseline file of finding ids to suppress (default: .motionlintignore).")
+    .option("--new-only", "Report only findings not seen in prior runs of the same URL.", false)
+    .option("--no-memory", "Disable cross-run memory: no finding ids, no baseline, no state written.")
     .option("--quiet", "Suppress per-issue terminal output (still writes report file).", false)
     .action(async (url: string, opts: ReviewOptions) => {
       try {
@@ -381,6 +384,9 @@ interface ReviewOptions {
   ci?: boolean;
   threshold?: string;
   maxFindings?: string;
+  baseline?: string;
+  newOnly?: boolean;
+  memory?: boolean;
   quiet?: boolean;
 }
 
@@ -453,6 +459,10 @@ async function runReviewCommand(rawUrl: string, opts: ReviewOptions): Promise<vo
       outputPath: opts.output ?? undefined,
       embedScreenshots: opts.embed ?? false,
       maxFindings,
+      // commander defaults negated flags to true, so only an explicit --no-memory overrides config
+      memory: opts.memory === false ? false : undefined,
+      baselinePath: opts.baseline ?? undefined,
+      newOnly: opts.newOnly === true ? true : undefined,
       onProgress: (event) => {
         if (opts.quiet) return;
         switch (event.type) {
@@ -464,6 +474,9 @@ async function runReviewCommand(rawUrl: string, opts: ReviewOptions): Promise<vo
             break;
           case "analyze_start":
             console.error(kleur.gray(`  analyzing ${event.viewport.name}…`));
+            break;
+          case "memory_warning":
+            console.error(kleur.yellow(`  memory: ${event.message}`));
             break;
           case "report_written":
             console.error(kleur.green(`  report → ${event.path}`));

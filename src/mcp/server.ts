@@ -30,6 +30,7 @@ const TOOLS = [
         record: { type: "boolean", description: "Record a video of the capture." },
         format: { type: "string", enum: ["md", "json", "sarif"], description: "Output format (default: md)." },
         max_findings: { type: "number", description: "Keep only the top N findings, severity-ordered (agent focus)." },
+        new_only: { type: "boolean", description: "Report only findings not seen in prior runs of the same URL." },
       },
       required: ["url"],
     },
@@ -47,6 +48,7 @@ const TOOLS = [
         model: { type: "string" },
         format: { type: "string", enum: ["md", "json", "sarif"] },
         max_findings: { type: "number", description: "Keep only the top N findings per route, severity-ordered." },
+        new_only: { type: "boolean", description: "Report only findings not seen in prior runs of each route." },
       },
       required: ["base_url", "routes"],
     },
@@ -110,6 +112,7 @@ interface ReviewUrlArgs {
   record?: boolean;
   format?: OutputFormat;
   max_findings?: number;
+  new_only?: boolean;
 }
 
 interface ReviewRoutesArgs {
@@ -120,6 +123,7 @@ interface ReviewRoutesArgs {
   model?: string;
   format?: OutputFormat;
   max_findings?: number;
+  new_only?: boolean;
 }
 
 interface ReviewFlowArgs {
@@ -158,6 +162,7 @@ async function handleReviewUrl(args: ReviewUrlArgs) {
     record: args.record ?? false,
     format: args.format ?? "md",
     maxFindings: args.max_findings,
+    newOnly: args.new_only,
   });
   lastReport = { rendered: result.rendered, format: result.format, report: result.report, path: result.reportPath };
   return result;
@@ -175,6 +180,7 @@ async function handleReviewRoutes(args: ReviewRoutesArgs) {
       model: args.model,
       format: args.format ?? "md",
       max_findings: args.max_findings,
+      new_only: args.new_only,
     });
     renderedParts.push(result.rendered);
     last = { report: result.report, path: result.reportPath, format: result.format };

@@ -29,10 +29,17 @@ function sortIssues(issues: UXIssue[]): UXIssue[] {
 }
 
 function renderIssue(issue: UXIssue): string {
-  return `- **[${severityBadge(issue.severity)}] ${issue.category}** — _${issue.location || "unknown location"}_
-  - **Issue:** ${issue.issue}
-  - **Why it matters:** ${issue.why_it_matters}
-  - **Fix:** ${issue.fix}`;
+  const lines = [`- **[${severityBadge(issue.severity)}] ${issue.category}** — _${issue.location || "unknown location"}_`];
+  if (issue.hash) {
+    const seen = issue.previously_seen && issue.previously_seen > 0
+      ? ` · seen in ${issue.previously_seen} prior run${issue.previously_seen === 1 ? "" : "s"}`
+      : "";
+    lines.push(`  - **Id:** \`${issue.hash}\`${seen} — add to the baseline file to suppress`);
+  }
+  lines.push(`  - **Issue:** ${issue.issue}`);
+  lines.push(`  - **Why it matters:** ${issue.why_it_matters}`);
+  lines.push(`  - **Fix:** ${issue.fix}`);
+  return lines.join("\n");
 }
 
 export function renderMarkdownReport(report: ReviewReport, opts: MarkdownOptions = {}): string {

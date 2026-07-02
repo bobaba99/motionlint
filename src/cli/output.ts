@@ -42,6 +42,12 @@ export function summarize(report: ReviewReport): string {
         lines.push(`    ${issue.issue}`);
         lines.push(kleur.dim(`    why: ${issue.why_it_matters}`));
         lines.push(kleur.green(`    fix: ${issue.fix}`));
+        if (issue.hash) {
+          const seen = issue.previously_seen && issue.previously_seen > 0
+            ? ` · seen in ${issue.previously_seen} prior run${issue.previously_seen === 1 ? "" : "s"}`
+            : "";
+          lines.push(kleur.dim(`    id: ${issue.hash}${seen}`));
+        }
         lines.push("");
       }
     }

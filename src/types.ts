@@ -63,6 +63,10 @@ export interface UXIssue {
   issue: string;
   why_it_matters: string;
   fix: string;
+  /** Cross-run finding identity (set when memory is enabled). Add it to the baseline file to suppress the finding. */
+  hash?: string;
+  /** How many prior runs recorded this finding at this URL (set when memory is enabled). */
+  previously_seen?: number;
 }
 
 export interface AnalysisResult {
@@ -124,6 +128,17 @@ export interface CIConfig {
   failOnCritical: boolean;
 }
 
+export interface MemoryConfig {
+  /** Master switch for cross-run memory (annotation, baseline, persistence). */
+  enabled: boolean;
+  /** JSON store path, keyed by reviewed URL. */
+  path: string;
+  /** Baseline file of finding hashes to always suppress. */
+  baseline: string;
+  /** Report only findings not seen in prior runs. */
+  newOnly: boolean;
+}
+
 export interface MotionLintConfig {
   provider: string;
   model: string | null;
@@ -140,6 +155,7 @@ export interface MotionLintConfig {
   record: boolean;
   /** Per-run output cap: keep only the top N findings, severity-ordered. null = uncapped. */
   maxFindings: number | null;
+  memory: MemoryConfig;
   ci: CIConfig;
   auth: AuthConfig;
 }

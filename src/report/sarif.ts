@@ -30,9 +30,13 @@ export function renderSarifReport(report: ReviewReport): string {
             kind: "uiElement",
           }],
         }],
+        // Stable cross-run identity so SARIF consumers (e.g. GitHub code
+        // scanning) can dedup the same finding across runs and PRs.
+        ...(issue.hash ? { partialFingerprints: { "motionlintFinding/v1": issue.hash } } : {}),
         properties: {
           viewport: entry.capture.viewport.name,
           category: issue.category,
+          ...(issue.previously_seen !== undefined ? { previously_seen: issue.previously_seen } : {}),
         },
       });
     }
