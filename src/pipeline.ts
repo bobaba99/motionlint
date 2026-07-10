@@ -3,6 +3,7 @@ import { join } from "node:path";
 import { captureScreenshot } from "./capture/screenshot.js";
 import { buildPrompt } from "./analysis/prompt.js";
 import { resolveProvider } from "./providers/resolver.js";
+import { sharedRateLimiter, withRateLimit } from "./resources/limiter.js";
 import { aggregate } from "./report/aggregate.js";
 import { loadBaseline } from "./memory/baseline.js";
 import { applyMemory } from "./memory/filter.js";
@@ -97,12 +98,15 @@ export async function runReview(opts: RunReviewOptions): Promise<RunReviewResult
   const { config, url, onProgress } = opts;
   const viewports = pickViewports(config, opts.viewports);
 
-  const provider = await resolveProvider({
-    provider: opts.provider ?? config.provider,
-    model: opts.model ?? config.model,
-    fallbackProvider: config.fallbackProvider,
-    fallbackModel: config.fallbackModel,
-  });
+  const provider = withRateLimit(
+    await resolveProvider({
+      provider: opts.provider ?? config.provider,
+      model: opts.model ?? config.model,
+      fallbackProvider: config.fallbackProvider,
+      fallbackModel: config.fallbackModel,
+    }),
+    sharedRateLimiter(config.resources.providerCallsPerMinute),
+  );
   onProgress?.({ type: "provider_resolved", provider });
 
   const captures: CaptureResult[] = [];

@@ -5,6 +5,7 @@ import { runFlowCapture } from "../capture/flow_capture.js";
 import { buildFlowPrompt } from "../analysis/flow_prompt.js";
 import { resolveProvider } from "../providers/resolver.js";
 import { SelfConsistencyProvider } from "../providers/consistency.js";
+import { sharedRateLimiter, withRateLimit } from "../resources/limiter.js";
 import { flowSlug } from "./spec.js";
 import type { FlowSpec, FlowReport } from "./types.js";
 
@@ -25,6 +26,8 @@ export interface RunFlowOptions {
   burstStrategy?: "screencast" | "screenshot";
   /** Optional path to a team preferences markdown file (motion philosophy, inspirations). */
   preferencesPath?: string;
+  /** Process-wide ceiling on provider analyze() calls per minute (config resources.providerCallsPerMinute). */
+  providerCallsPerMinute?: number | null;
   onProgress?: (event: FlowProgress) => void;
 }
 
@@ -46,10 +49,15 @@ export async function runFlow(opts: RunFlowOptions): Promise<FlowReport> {
   const artifactDir = opts.artifactDir ?? ".motionlint/flows";
   const videoDir = opts.videoDir;
 
-  let provider = await resolveProvider({
-    provider: opts.provider,
-    model: opts.model ?? null,
-  });
+  // Rate-limit beneath the consistency wrapper so every sample counts
+  // against the ceiling, not just the composite call.
+  let provider = withRateLimit(
+    await resolveProvider({
+      provider: opts.provider,
+      model: opts.model ?? null,
+    }),
+    sharedRateLimiter(opts.providerCallsPerMinute),
+  );
   if (opts.consistency && opts.consistency > 1) {
     provider = new SelfConsistencyProvider(provider, { samples: opts.consistency });
   }

@@ -9,6 +9,7 @@ import {
 import { readFile } from "node:fs/promises";
 import { runReview } from "../pipeline.js";
 import { loadConfig } from "../config/loader.js";
+import { sharedReviewGate } from "../resources/limiter.js";
 import type { OutputFormat, ReviewReport } from "../types.js";
 
 const TOOLS = [
@@ -157,7 +158,7 @@ async function handleReviewUrl(args: ReviewUrlArgs) {
   const config = await loadConfig();
   if (args.wait_for) config.waitFor = args.wait_for;
 
-  const result = await runReview({
+  const review = () => runReview({
     url: args.url,
     config,
     provider: args.provider,
@@ -169,6 +170,10 @@ async function handleReviewUrl(args: ReviewUrlArgs) {
     maxPrAnnotations: args.max_pr_annotations,
     newOnly: args.new_only,
   });
+  // Gate per review (not per tool call): review_routes funnels each route
+  // through here, so gating an outer call too would deadlock at max=1.
+  const gate = sharedReviewGate(config.resources.maxConcurrentReviews);
+  const result = gate ? await gate.run(review) : await review();
   lastReport = { rendered: result.rendered, format: result.format, report: result.report, path: result.reportPath };
   return result;
 }
@@ -206,7 +211,8 @@ async function handleReviewFlow(args: ReviewFlowArgs): Promise<string> {
   const spec = await loadFlowSpec(specSource, args.url);
   if (args.name) spec.name = args.name;
 
-  const report = await runFlow({
+  const config = await loadConfig();
+  const flow = () => runFlow({
     spec,
     provider: args.provider,
     model: args.model ?? null,
@@ -215,7 +221,10 @@ async function handleReviewFlow(args: ReviewFlowArgs): Promise<string> {
     videoDir: args.record === false ? undefined : ".motionlint/videos",
     burstFullPage: args.burst_fullpage === true,
     preferencesPath: args.preferences_path,
+    providerCallsPerMinute: config.resources.providerCallsPerMinute,
   });
+  const gate = sharedReviewGate(config.resources.maxConcurrentReviews);
+  const report = gate ? await gate.run(flow) : await flow();
 
   const outDir = resolve(".motionlint/flows");
   await mkdir(outDir, { recursive: true });

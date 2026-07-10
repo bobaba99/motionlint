@@ -128,6 +128,13 @@ export interface CIConfig {
   failOnCritical: boolean;
 }
 
+export interface ResourceConfig {
+  /** Max reviews running at once in one process (MCP server under concurrent agent calls). null = unlimited. */
+  maxConcurrentReviews: number | null;
+  /** Ceiling on vision-provider analyze() calls per minute across the process (quota / spend control). null = unlimited. */
+  providerCallsPerMinute: number | null;
+}
+
 export interface MemoryConfig {
   /** Master switch for cross-run memory (annotation, baseline, persistence). */
   enabled: boolean;
@@ -158,6 +165,7 @@ export interface MotionLintConfig {
   /** PR-surface cap: emit at most N SARIF results per report, severity-ordered. null = uncapped. */
   maxPrAnnotations: number | null;
   memory: MemoryConfig;
+  resources: ResourceConfig;
   ci: CIConfig;
   auth: AuthConfig;
 }

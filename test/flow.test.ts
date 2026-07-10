@@ -154,6 +154,9 @@ describe("flow runner end-to-end (mock provider)", () => {
       artifactDir: resolve(".motionlint/flows"),
       videoDir: resolve(".motionlint/videos"),
       noImplicitBursts: false,
+      // High enough to never throttle here; proves the flow path runs
+      // through the provider rate limiter (resources.providerCallsPerMinute).
+      providerCallsPerMinute: 600,
     });
     assert.equal(report.flow_name, "test-signup-flow");
     assert.equal(report.provider, "mock");

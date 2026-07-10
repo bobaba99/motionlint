@@ -27,6 +27,7 @@ const DEFAULT_CONFIG: MotionLintConfig = {
     baseline: ".motionlintignore",
     newOnly: false,
   },
+  resources: { maxConcurrentReviews: null, providerCallsPerMinute: null },
   ci: { threshold: "warning", failOnCritical: true },
   auth: { cookies: null, localStorage: null, beforeNavigate: null },
 };

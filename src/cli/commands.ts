@@ -190,6 +190,7 @@ async function runFlowCommand(opts: FlowCliOptions): Promise<void> {
 
   if (!opts.quiet) console.error(kleur.cyan(`→ Running flow "${spec.name}" against ${spec.url} (${spec.steps.length} steps, ${spec.burst_interval_ms}ms intervals × ${spec.burst_ms}ms window)`));
 
+  const config = await loadConfig();
   const report = await runFlow({
     spec,
     provider: opts.provider,
@@ -201,6 +202,7 @@ async function runFlowCommand(opts: FlowCliOptions): Promise<void> {
     burstFullPage: opts.burstFullpage === true,
     burstStrategy: (opts.burstStrategy === "screenshot" ? "screenshot" : "screencast"),
     preferencesPath: opts.preferences,
+    providerCallsPerMinute: config.resources.providerCallsPerMinute,
     onProgress: (event) => {
       if (opts.quiet) return;
       switch (event.type) {
