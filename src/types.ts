@@ -155,6 +155,8 @@ export interface MotionLintConfig {
   record: boolean;
   /** Per-run output cap: keep only the top N findings, severity-ordered. null = uncapped. */
   maxFindings: number | null;
+  /** PR-surface cap: emit at most N SARIF results per report, severity-ordered. null = uncapped. */
+  maxPrAnnotations: number | null;
   memory: MemoryConfig;
   ci: CIConfig;
   auth: AuthConfig;

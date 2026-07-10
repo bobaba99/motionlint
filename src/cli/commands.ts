@@ -41,6 +41,7 @@ export function buildProgram(): Command {
     .option("--ci", "Exit with non-zero code if issues exceed the configured threshold.", false)
     .option("--threshold <severity>", `CI severity threshold: ${VALID_SEVERITIES.join("|")}.`)
     .option("--max-findings <n>", "Keep only the top N findings per run, severity-ordered (agent focus).")
+    .option("--max-pr-annotations <n>", "SARIF only: emit at most N results per report, severity-ordered (reviewer fatigue).")
     .option("--baseline <path>", "Baseline file of finding ids to suppress (default: .motionlintignore).")
     .option("--new-only", "Report only findings not seen in prior runs of the same URL.", false)
     .option("--no-memory", "Disable cross-run memory: no finding ids, no baseline, no state written.")
@@ -368,6 +369,15 @@ function collectViewport(value: string, previous: string[]): string[] {
   return [...previous, value];
 }
 
+function parsePositiveInt(value: string | undefined, flag: string): number | undefined {
+  if (value === undefined) return undefined;
+  const n = Number(value);
+  if (!Number.isInteger(n) || n < 1) {
+    throw new Error(`Invalid ${flag}: ${value}. Use a positive integer.`);
+  }
+  return n;
+}
+
 interface ReviewOptions {
   routes?: string;
   viewport?: string[];
@@ -385,6 +395,7 @@ interface ReviewOptions {
   ci?: boolean;
   threshold?: string;
   maxFindings?: string;
+  maxPrAnnotations?: string;
   baseline?: string;
   newOnly?: boolean;
   memory?: boolean;
@@ -431,14 +442,8 @@ async function runReviewCommand(rawUrl: string, opts: ReviewOptions): Promise<vo
   }
   if (opts.threshold) config.ci.threshold = opts.threshold as IssueSeverity;
 
-  let maxFindings: number | undefined;
-  if (opts.maxFindings !== undefined) {
-    const n = Number(opts.maxFindings);
-    if (!Number.isInteger(n) || n < 1) {
-      throw new Error(`Invalid --max-findings: ${opts.maxFindings}. Use a positive integer.`);
-    }
-    maxFindings = n;
-  }
+  const maxFindings = parsePositiveInt(opts.maxFindings, "--max-findings");
+  const maxPrAnnotations = parsePositiveInt(opts.maxPrAnnotations, "--max-pr-annotations");
 
   const interactions = await readInteractions(opts.interactions);
   const targets = buildUrlList(rawUrl, opts.routes);
@@ -460,6 +465,7 @@ async function runReviewCommand(rawUrl: string, opts: ReviewOptions): Promise<vo
       outputPath: opts.output === false ? null : opts.output ?? undefined,
       embedScreenshots: opts.embed ?? false,
       maxFindings,
+      maxPrAnnotations,
       // commander defaults negated flags to true, so only an explicit --no-memory overrides config
       memory: opts.memory === false ? false : undefined,
       baselinePath: opts.baseline ?? undefined,

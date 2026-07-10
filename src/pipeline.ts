@@ -37,6 +37,8 @@ export interface RunReviewOptions {
   embedScreenshots?: boolean;
   /** Per-run output cap override; falls back to config.maxFindings. */
   maxFindings?: number | null;
+  /** PR-surface cap override (SARIF only); falls back to config.maxPrAnnotations. */
+  maxPrAnnotations?: number | null;
   /** Cross-run memory override; falls back to config.memory.enabled. */
   memory?: boolean;
   /** Baseline file override; falls back to config.memory.baseline. */
@@ -172,7 +174,9 @@ export async function runReview(opts: RunReviewOptions): Promise<RunReviewResult
       rendered = renderJsonReport(report);
       break;
     case "sarif":
-      rendered = renderSarifReport(report);
+      rendered = renderSarifReport(report, {
+        maxAnnotations: opts.maxPrAnnotations !== undefined ? opts.maxPrAnnotations : config.maxPrAnnotations,
+      });
       break;
     default:
       rendered = renderMarkdownReport(report, {

@@ -30,6 +30,7 @@ const TOOLS = [
         record: { type: "boolean", description: "Record a video of the capture." },
         format: { type: "string", enum: ["md", "json", "sarif"], description: "Output format (default: md)." },
         max_findings: { type: "number", description: "Keep only the top N findings, severity-ordered (agent focus)." },
+        max_pr_annotations: { type: "number", description: "SARIF only: emit at most N results per report, severity-ordered (reviewer fatigue)." },
         new_only: { type: "boolean", description: "Report only findings not seen in prior runs of the same URL." },
       },
       required: ["url"],
@@ -48,6 +49,7 @@ const TOOLS = [
         model: { type: "string" },
         format: { type: "string", enum: ["md", "json", "sarif"] },
         max_findings: { type: "number", description: "Keep only the top N findings per route, severity-ordered." },
+        max_pr_annotations: { type: "number", description: "SARIF only: emit at most N results per route report, severity-ordered." },
         new_only: { type: "boolean", description: "Report only findings not seen in prior runs of each route." },
       },
       required: ["base_url", "routes"],
@@ -112,6 +114,7 @@ interface ReviewUrlArgs {
   record?: boolean;
   format?: OutputFormat;
   max_findings?: number;
+  max_pr_annotations?: number;
   new_only?: boolean;
 }
 
@@ -123,6 +126,7 @@ interface ReviewRoutesArgs {
   model?: string;
   format?: OutputFormat;
   max_findings?: number;
+  max_pr_annotations?: number;
   new_only?: boolean;
 }
 
@@ -162,6 +166,7 @@ async function handleReviewUrl(args: ReviewUrlArgs) {
     record: args.record ?? false,
     format: args.format ?? "md",
     maxFindings: args.max_findings,
+    maxPrAnnotations: args.max_pr_annotations,
     newOnly: args.new_only,
   });
   lastReport = { rendered: result.rendered, format: result.format, report: result.report, path: result.reportPath };
@@ -180,6 +185,7 @@ async function handleReviewRoutes(args: ReviewRoutesArgs) {
       model: args.model,
       format: args.format ?? "md",
       max_findings: args.max_findings,
+      max_pr_annotations: args.max_pr_annotations,
       new_only: args.new_only,
     });
     renderedParts.push(result.rendered);

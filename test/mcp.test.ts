@@ -62,5 +62,11 @@ describe("MCP server smoke test", () => {
     ], `expected the full tool surface, got: ${names.join(", ")}`);
     const resources = responses.find((r) => r.id === 3)?.result?.resources as Array<{ uri: string }> | undefined;
     assert.ok(resources?.some((r) => r.uri === "motionlint://reports/latest"), "latest-report resource missing");
+
+    const schemas = tools as Array<{ name: string; inputSchema?: { properties?: Record<string, unknown> } }>;
+    for (const tool of ["review_url", "review_routes"]) {
+      const props = schemas.find((t) => t.name === tool)?.inputSchema?.properties ?? {};
+      assert.ok("max_pr_annotations" in props, `${tool} must expose max_pr_annotations`);
+    }
   });
 });

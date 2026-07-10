@@ -59,6 +59,9 @@ motionlint review http://localhost:3000 --provider anthropic --model claude-sonn
 
 # Agent focus — keep only the top 5 findings, and only ones not seen in prior runs.
 motionlint review http://localhost:3000 --max-findings 5 --new-only
+
+# Reviewer focus — cap the SARIF upload at 10 annotations per report.
+motionlint review https://staging.acme.dev --format sarif -o ux.sarif --max-pr-annotations 10
 ```
 
 Sample terminal output for a flow review:
@@ -334,8 +337,8 @@ Then in Claude Code:
 
 | Tool | What it does |
 | --- | --- |
-| `review_url(url, viewports?, provider?, model?, wait_for?, record?, format?, max_findings?, new_only?)` | Static UX review of a URL at multiple viewports. Returns a markdown / JSON / SARIF report. |
-| `review_routes(base_url, routes, viewports?, ..., max_findings?, new_only?)` | Same review across multiple routes of one app. |
+| `review_url(url, viewports?, provider?, model?, wait_for?, record?, format?, max_findings?, max_pr_annotations?, new_only?)` | Static UX review of a URL at multiple viewports. Returns a markdown / JSON / SARIF report. |
+| `review_routes(base_url, routes, viewports?, ..., max_findings?, max_pr_annotations?, new_only?)` | Same review across multiple routes of one app. |
 | `review_flow(url, steps?\|spec_path?, preferences_path?, provider?, ...)` | Animation/interaction review of a scripted user journey. Returns a flow report with the structured CC handoff block. |
 | `tune_animations(url, viewport_*?, settle_ms?, output?)` | Detects every animation on a page and writes an interactive HTML tuner. Returns the file path. |
 | `get_latest_report(format?)` | Returns the most recent review/flow report content. |
@@ -414,6 +417,7 @@ Drop a `.motionlintrc.json` in your repo root (or use `motionlint.config.js` / a
   "rules": null,
   "record": false,
   "maxFindings": null,
+  "maxPrAnnotations": null,
   "memory": {
     "enabled": true,
     "path": ".motionlint/memory.json",
@@ -430,6 +434,7 @@ Drop a `.motionlintrc.json` in your repo root (or use `motionlint.config.js` / a
 Re-running review on the same routes used to surface the same findings every run. Two mechanisms keep the output focused:
 
 - **Per-run output cap** — `--max-findings N` (or `maxFindings` in config) keeps only the top N findings per run, severity-ordered, so an agent works on what matters most first. The report's `Omitted` line says how many were capped.
+- **PR-surface cap** — `--max-pr-annotations N` (or `maxPrAnnotations` in config; SARIF only) emits at most N results per report, severity-ordered, so a code-scanning upload doesn't flood a PR with annotations. The dropped count lands in the SARIF run's `omitted_by_pr_cap` property.
 - **Cross-run memory** — every finding gets a stable id (hash of category + element location + normalized issue text). Recurrence detection goes further than exact hashing: category-synonym compatibility plus canonical-token overlap (thresholds calibrated on real cross-run data) matches the same fault even when the vision LLM rewords it between runs. Sightings are recorded per URL in `.motionlint/memory.json`; recurring findings are annotated with *seen in N prior runs* rather than silently dropped. Opt into deltas-only with `--new-only`. To permanently wave off a finding, copy its id into `.motionlintignore` (one hash per line, `#` comments and trailing notes allowed). Disable everything with `--no-memory`.
 
 SARIF output carries the finding id as a `partialFingerprint`, so GitHub code scanning dedups the same finding across runs and PRs natively.

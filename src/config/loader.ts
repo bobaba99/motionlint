@@ -20,6 +20,7 @@ const DEFAULT_CONFIG: MotionLintConfig = {
   rules: null,
   record: false,
   maxFindings: null,
+  maxPrAnnotations: null,
   memory: {
     enabled: true,
     path: ".motionlint/memory.json",
