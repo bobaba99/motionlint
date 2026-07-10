@@ -166,13 +166,17 @@ describe("flow runner end-to-end (mock provider)", () => {
     // 60Hz monitor frame rate (16.7ms) is impossible without dedicated capture
     // hardware; 50ms is half the 100ms human-detection threshold and below
     // industry-typical 100ms minimum animation intervals. We assert <70ms with
-    // some slack for setTimeout granularity.
+    // some slack for setTimeout granularity. Shared CI runners jitter the
+    // screencast cadence (observed ~80ms on GitHub-hosted runners), so the
+    // bound loosens there — still tight enough to catch a regression to the
+    // ~150-200ms screenshot-strategy cadence.
     const burst = report.capture.step_results.find((r) => r.frame_indices.length > 1);
     assert.ok(burst, "expected at least one burst with >1 frames");
     const burstFrames = burst!.frame_indices.map((i) => report.capture.frames[i]);
     const intervals = burstFrames.slice(1).map((f, i) => f.t_offset_ms - burstFrames[i].t_offset_ms);
     const avg = intervals.reduce((a, b) => a + b, 0) / intervals.length;
-    assert.ok(avg < 70, `expected sub-70ms intervals (50ms target), got ${avg.toFixed(1)}ms`);
+    const bound = process.env.CI ? 120 : 70;
+    assert.ok(avg < bound, `expected sub-${bound}ms intervals (50ms target), got ${avg.toFixed(1)}ms`);
 
     const md = renderFlowMarkdownReport(report);
     assert.match(md, /MotionLint Flow Report/);
