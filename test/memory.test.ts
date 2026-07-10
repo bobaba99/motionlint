@@ -52,6 +52,7 @@ function entryWith(issues: UXIssue[]): AnalysisEntry {
 
 const scratchDirs: string[] = [];
 async function scratchDir(): Promise<string> {
+  await mkdir(resolve(".motionlint/test-samples"), { recursive: true });
   const dir = await mkdtemp(resolve(".motionlint/test-samples/memory-"));
   scratchDirs.push(dir);
   return dir;
