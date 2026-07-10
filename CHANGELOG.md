@@ -8,6 +8,9 @@ All notable changes to MotionLint will be documented here. Format follows [Keep 
 
 - **Per-run output cap** — `--max-findings N` / `maxFindings` config / `max_findings` MCP param keeps only the top N findings per run, severity-ordered, for agent focus. Reports carry an `omitted` counts block.
 - **Cross-run memory** — findings get a stable id (category + element location + normalized issue text); sightings are recorded per URL in `.motionlint/memory.json`. Recurrence detection uses fuzzy matching (category-synonym compatibility + canonical-token overlap, calibrated on real cross-run data) so LLM rewording between runs still counts as the same finding. Recurring findings are annotated with "seen in N prior runs"; `--new-only` / `new_only` reports only new findings; `.motionlintignore` baselines finding ids permanently (rewordings of a baselined finding stay suppressed); `--no-memory` disables the layer. SARIF output carries the id as a `partialFingerprint` for GitHub code-scanning dedup.
+- **PR-surface cap** — `--max-pr-annotations N` / `maxPrAnnotations` config / `max_pr_annotations` MCP param bounds SARIF results per report, severity-ordered, so code-scanning uploads don't flood a PR. Dropped count surfaces as the SARIF run's `omitted_by_pr_cap` property.
+- **Resource cap** — `resources.maxConcurrentReviews` bounds concurrent reviews per process (MCP server under agent fan-out); `resources.providerCallsPerMinute` is a process-wide sliding-window ceiling on vision-LLM calls, applied to review and flow paths (each `--consistency` sample counts).
+- **Memory-store locking** — the cross-run store's read-modify-write now runs under a stale-aware lock file, so concurrent reviews of one project no longer clobber each other's recorded sightings. A wedged lock degrades to a warning, never a failed review.
 
 ## [0.1.0] — 2026-04-27
 
