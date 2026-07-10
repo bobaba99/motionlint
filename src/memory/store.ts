@@ -110,9 +110,9 @@ export function recordFindings(
 }
 
 /**
- * Plain read-modify-write with no cross-process locking: concurrent reviews of
- * the same project can clobber each other's recorded sightings. Deliberate —
- * locking is a fleet-scale concern, deferred with the PR-surface/resource caps.
+ * Plain write with no locking of its own — the pipeline serializes the whole
+ * load→record→save cycle under withMemoryLock (see memory/lock.ts), so
+ * concurrent reviews of one project don't clobber each other's sightings.
  */
 export async function saveMemory(path: string, store: MemoryStore): Promise<void> {
   await mkdir(dirname(path), { recursive: true });

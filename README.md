@@ -441,6 +441,8 @@ Re-running review on the same routes used to surface the same findings every run
 
 SARIF output carries the finding id as a `partialFingerprint`, so GitHub code scanning dedups the same finding across runs and PRs natively.
 
+Concurrent reviews of the same project are safe: the memory store is updated under a stale-aware file lock (`memory.json.lock`), so parallel runs don't clobber each other's recorded sightings. A wedged lock never fails a review — after a short wait the run warns and proceeds without it.
+
 ## Use cases
 
 - **Pre-merge UX guardrail.** Solo dev or 2-person startup with no designer. Run `motionlint review https://pr-123.preview.example.com --ci --threshold critical` in CI; warning-or-worse blocks the merge until you've at least seen the issues.

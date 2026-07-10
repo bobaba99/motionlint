@@ -6,7 +6,8 @@ import { resolveProvider } from "./providers/resolver.js";
 import { sharedRateLimiter, withRateLimit } from "./resources/limiter.js";
 import { aggregate } from "./report/aggregate.js";
 import { loadBaseline } from "./memory/baseline.js";
-import { applyMemory } from "./memory/filter.js";
+import { applyMemory, type MemoryFilterResult } from "./memory/filter.js";
+import { MemoryLockTimeoutError, withMemoryLock } from "./memory/lock.js";
 import { emptyStore, loadMemory, recordFindings, saveMemory, type MemoryStore } from "./memory/store.js";
 import { renderMarkdownReport } from "./report/markdown.js";
 import { renderJsonReport } from "./report/json.js";
@@ -145,25 +146,42 @@ export async function runReview(opts: RunReviewOptions): Promise<RunReviewResult
   let memoryOmitted: { by_baseline: number; by_memory: number } | undefined;
   if (opts.memory ?? config.memory.enabled) {
     const baseline = await loadBaseline(opts.baselinePath ?? config.memory.baseline);
-    let store: MemoryStore;
+    const runMemory = async (): Promise<MemoryFilterResult> => {
+      let store: MemoryStore;
+      try {
+        store = await loadMemory(config.memory.path);
+      } catch (err) {
+        // A corrupt store must not fail the review — warn and rebuild from this run.
+        onProgress?.({ type: "memory_warning", message: (err as Error).message });
+        store = emptyStore();
+      }
+      const filtered = applyMemory({
+        analyses,
+        url,
+        baseline,
+        store,
+        newOnly: opts.newOnly ?? config.memory.newOnly,
+      });
+      const observed = analyses.flatMap((entry) => entry.analysis.issues);
+      await saveMemory(config.memory.path, recordFindings(store, url, observed, new Date().toISOString()));
+      return filtered;
+    };
+    let filtered: MemoryFilterResult;
     try {
-      store = await loadMemory(config.memory.path);
+      // Lock spans the whole read-modify-write so concurrent reviews of one
+      // project don't clobber each other's recorded sightings.
+      filtered = await withMemoryLock(config.memory.path, runMemory);
     } catch (err) {
-      // A corrupt store must not fail the review — warn and rebuild from this run.
-      onProgress?.({ type: "memory_warning", message: (err as Error).message });
-      store = emptyStore();
+      if (!(err instanceof MemoryLockTimeoutError)) throw err;
+      // Availability over strictness: a wedged lock must not fail the review.
+      onProgress?.({
+        type: "memory_warning",
+        message: `${err.message} Proceeding without the lock; concurrently recorded sightings may be lost.`,
+      });
+      filtered = await runMemory();
     }
-    const filtered = applyMemory({
-      analyses,
-      url,
-      baseline,
-      store,
-      newOnly: opts.newOnly ?? config.memory.newOnly,
-    });
     reportAnalyses = filtered.analyses;
     memoryOmitted = { by_baseline: filtered.by_baseline, by_memory: filtered.by_memory };
-    const observed = analyses.flatMap((entry) => entry.analysis.issues);
-    await saveMemory(config.memory.path, recordFindings(store, url, observed, new Date().toISOString()));
   }
 
   const report = aggregate(url, provider.name, provider.model, reportAnalyses, {

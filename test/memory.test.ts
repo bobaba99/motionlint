@@ -1,7 +1,7 @@
 import { describe, it, after } from "node:test";
 import assert from "node:assert/strict";
-import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
-import { join, resolve } from "node:path";
+import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { dirname, join, resolve } from "node:path";
 import { findingHash } from "../src/memory/hash.js";
 import { loadBaseline } from "../src/memory/baseline.js";
 import {
@@ -484,5 +484,37 @@ describe("pipeline memory integration (requires demo server on :4173)", () => {
     const issues = run.report.analyses[0].analysis.issues;
     assert.ok(issues.every((i) => i.hash === undefined), "findings must not be annotated when memory is off");
     await assert.rejects(() => readFile(config.memory.path, "utf8"), /ENOENT/);
+  });
+
+  it("warns and proceeds unlocked when another live run holds the memory lock", async () => {
+    const { config } = await memoryConfig();
+    // A fresh lock naming a live pid is exactly what a concurrent healthy run
+    // looks like; the review must not fail, and memory must still function.
+    await mkdir(dirname(config.memory.path), { recursive: true });
+    await writeFile(
+      `${config.memory.path}.lock`,
+      JSON.stringify({ pid: process.pid, token: "someone-else", acquired_at: new Date().toISOString() }),
+      "utf8",
+    );
+
+    const warnings: string[] = [];
+    const run = await runReview({
+      url: URL,
+      config,
+      provider: "mock",
+      outputPath: null,
+      onProgress: (e) => {
+        if (e.type === "memory_warning") warnings.push(e.message);
+      },
+    });
+    assert.ok(
+      warnings.some((w) => w.includes("Proceeding without the lock")),
+      `expected an unlocked-fallback warning, got: ${warnings.join(" | ")}`,
+    );
+    const issues = run.report.analyses[0].analysis.issues;
+    assert.ok(issues.length > 0 && issues.every((i) => i.hash), "memory must still annotate findings");
+    const store = await loadMemory(config.memory.path);
+    assert.ok(Object.keys(store.urls[URL] ?? {}).length > 0, "sightings must still be recorded");
+    await rm(`${config.memory.path}.lock`, { force: true });
   });
 });
