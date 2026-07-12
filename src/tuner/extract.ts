@@ -1,17 +1,12 @@
 import { createHash } from "node:crypto";
 import { chromium } from "playwright";
 import { INSTRUMENTATION_SOURCE } from "./instrument.js";
+import { EMIL_EASING_PRESETS } from "./standards.js";
 import type { AnimationParam, AnimationPreset, AnimationSource, DetectedAnimation, TunerCapture } from "./types.js";
 
-const EASING_PRESETS: AnimationPreset[] = [
-  { name: "linear", value: "linear", description: "Constant speed (no acceleration)." },
-  { name: "ease", value: "ease", description: "Default browser ease." },
-  { name: "ease-in-out", value: "ease-in-out", description: "Slow start and end." },
-  { name: "ease-out (recommended)", value: "cubic-bezier(.16,1,.3,1)", description: "Soft expo-out — best for entrances." },
-  { name: "spring (snappy)", value: "cubic-bezier(.34,1.56,.64,1)", description: "Slight overshoot." },
-  { name: "spring (bouncy)", value: "cubic-bezier(.68,-.55,.27,1.55)", description: "Pronounced bounce — use sparingly." },
-  { name: "decelerate (Material)", value: "cubic-bezier(0,0,.2,1)", description: "Material decelerate curve." },
-];
+// The tuner offers Emil Kowalski's strong curves first (the linter recommends these
+// verbatim), then the softer/decorative options. Single source of truth in standards.ts.
+const EASING_PRESETS: AnimationPreset[] = EMIL_EASING_PRESETS.map(({ name, value, description }) => ({ name, value, description }));
 
 interface RawAnim {
   source: AnimationSource;

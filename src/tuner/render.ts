@@ -1,4 +1,5 @@
 import type { TunerCapture } from "./types.js";
+import { auditAnimations, type AnimationFinding } from "./lint.js";
 
 function escapeHtml(s: string): string {
   return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
@@ -72,6 +73,22 @@ dialog .head { padding: 16px 20px; border-bottom: 1px solid var(--border); displ
 dialog pre { margin: 0; padding: 16px 20px; max-height: 60vh; overflow: auto; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12.5px; line-height: 1.5; white-space: pre-wrap; word-break: break-word; }
 dialog .actions { padding: 12px 20px; border-top: 1px solid var(--border); display: flex; gap: 8px; justify-content: flex-end; }
 .empty { padding: 60px; text-align: center; color: var(--text-dim); }
+/* Emil-standards lint callout inside a card */
+.card { grid-template-rows: 110px 220px auto auto auto; }
+.lint { display: flex; flex-direction: column; gap: 6px; }
+.lint .clean { font-size: 12.5px; color: var(--accent-2); display: flex; align-items: center; gap: 6px; }
+.lint .finding { display: flex; gap: 8px; align-items: flex-start; font-size: 12.5px; background: var(--bg-elev); border: 1px solid var(--border); border-left: 3px solid var(--warning); border-radius: 8px; padding: 7px 10px; }
+.lint .finding.crit { border-left-color: var(--danger); }
+.lint .finding .sev { font-weight: 700; font-size: 10px; text-transform: uppercase; letter-spacing: .04em; color: var(--warning); flex: none; margin-top: 1px; }
+.lint .finding.crit .sev { color: var(--danger); }
+.lint .finding .body b { color: var(--text); font-weight: 650; }
+.lint .finding .body { color: var(--text-dim); }
+.lint .finding .body .fix { color: var(--accent-2); }
+.header-lint { display: inline-flex; gap: 6px; align-items: center; font-size: 13px; color: var(--text-dim); }
+.header-lint .chip { font-weight: 700; padding: 2px 9px; border-radius: 999px; font-size: 12px; }
+.header-lint .chip.warn { background: rgba(255,181,71,.18); color: var(--warning); }
+.header-lint .chip.crit { background: rgba(255,93,108,.18); color: var(--danger); }
+.header-lint .chip.ok { background: rgba(41,230,196,.18); color: var(--accent-2); }
 `;
 
 const TUNER_JS = `
@@ -81,7 +98,7 @@ const TUNER_JS = `
   const state = {};
   CAPTURE.animations.forEach(a => {
     state[a.id] = {
-      preset: 'ease-out (recommended)',
+      preset: 'ease-out (Emil)',
       values: Object.fromEntries(a.params.map(p => [p.name, p.value])),
       comments: ''
     };
@@ -212,7 +229,7 @@ const TUNER_JS = `
       const resetBtn = document.querySelector('button[data-reset="' + anim.id + '"]');
       if (resetBtn) resetBtn.addEventListener('click', () => {
         console.log('[ml-tuner] reset click', { animId: anim.id });
-        state[anim.id].preset = 'ease-out (recommended)';
+        state[anim.id].preset = 'ease-out (Emil)';
         anim.params.forEach(p => { state[anim.id].values[p.name] = p.value; });
         refreshPreview(anim, 'reset-click');
         renderAll();
@@ -252,7 +269,7 @@ const TUNER_JS = `
       const next = state[anim.id].values;
       const diff = {};
       for (const k of Object.keys(orig)) if (orig[k] !== next[k]) diff[k] = { from: orig[k], to: next[k] };
-      const presetChanged = state[anim.id].preset !== 'ease-out (recommended)';
+      const presetChanged = state[anim.id].preset !== 'ease-out (Emil)';
       const comment = state[anim.id].comments.trim();
       if (Object.keys(diff).length === 0 && !presetChanged && !comment) return null;
       return {
@@ -321,7 +338,19 @@ const TUNER_JS = `
 })();
 `;
 
-function renderAnimationCard(anim: TunerCapture["animations"][number]): string {
+function renderLintBlock(findings: AnimationFinding[]): string {
+  if (findings.length === 0) {
+    return `<div class="lint"><div class="clean">✓ On-standard — no animation-standard violations.</div></div>`;
+  }
+  const rows = findings.map((f) => {
+    const crit = f.severity === "critical" ? " crit" : "";
+    const fix = f.suggested ? ` <span class="fix">→ ${escapeHtml(f.suggested)}</span>` : "";
+    return `<div class="finding${crit}"><span class="sev">${escapeHtml(f.severity)}</span><span class="body"><b>${escapeHtml(f.title)}</b> — ${escapeHtml(f.fix)}${fix}</span></div>`;
+  }).join("");
+  return `<div class="lint">${rows}</div>`;
+}
+
+function renderAnimationCard(anim: TunerCapture["animations"][number], findings: AnimationFinding[]): string {
   const presets = anim.presets.map((p) =>
     `<option value="${escapeAttr(p.name)}">${escapeHtml(p.name)} — ${escapeHtml(p.description)}</option>`,
   ).join("");
@@ -344,6 +373,7 @@ function renderAnimationCard(anim: TunerCapture["animations"][number]): string {
       <div class="technical">selector: ${escapeHtml(anim.selector)}</div>
     </div>
     <div class="preview-frame" data-anim="${escapeAttr(anim.id)}"></div>
+    ${renderLintBlock(findings)}
     <div class="row">
       <button class="btn ghost" data-replay="${escapeAttr(anim.id)}">▶ Replay</button>
       <button class="btn ghost" data-reset="${escapeAttr(anim.id)}">↺ Reset</button>
@@ -364,8 +394,27 @@ function renderAnimationCard(anim: TunerCapture["animations"][number]): string {
 }
 
 export function renderTunerHTML(capture: TunerCapture): string {
+  // Run the deterministic Emil-standards linter and group findings by animation id.
+  const audit = auditAnimations(capture);
+  const byAnim = new Map<string, AnimationFinding[]>();
+  for (const f of audit.findings) {
+    const list = byAnim.get(f.anim_id) ?? [];
+    list.push(f);
+    byAnim.set(f.anim_id, list);
+  }
+  const totalFlagged = audit.critical_count + audit.warning_count + audit.suggestion_count;
+  const headerLint = capture.animations.length
+    ? `<div class="header-lint">standards: ${
+        totalFlagged === 0
+          ? `<span class="chip ok">all clean</span>`
+          : `${audit.critical_count ? `<span class="chip crit">${audit.critical_count} critical</span>` : ""}${
+              audit.warning_count ? `<span class="chip warn">${audit.warning_count} warning</span>` : ""
+            }${audit.suggestion_count ? `<span class="chip warn">${audit.suggestion_count} suggestion</span>` : ""} · score ${audit.score}/100`
+      }</div>`
+    : "";
+
   const cards = capture.animations.length
-    ? capture.animations.map(renderAnimationCard).join("\n")
+    ? capture.animations.map((a) => renderAnimationCard(a, byAnim.get(a.id) ?? [])).join("\n")
     : `<div class="empty">No animations detected on this page.</div>`;
 
   return `<!doctype html>
@@ -382,6 +431,7 @@ export function renderTunerHTML(capture: TunerCapture): string {
   <div class="meta">${escapeHtml(capture.url)}</div>
   <div class="meta">${escapeHtml(capture.captured_at)}</div>
   <div class="meta">${capture.animations.length} animation${capture.animations.length === 1 ? "" : "s"} detected</div>
+  ${headerLint}
   <div class="right">
     <button class="btn ghost" id="download">↓ Download .md</button>
     <button class="btn" id="export">Export prompt for Claude Code</button>
