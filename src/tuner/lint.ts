@@ -60,7 +60,7 @@ function rawParams(anim: DetectedAnimation): Record<string, unknown> {
 }
 
 function durationMs(anim: DetectedAnimation): number | null {
-  const p = anim.params.find((x) => x.name === "duration");
+  const p = (anim.params ?? []).find((x) => x.name === "duration");
   return p ? p.value : null;
 }
 
@@ -98,15 +98,35 @@ function looksLikeHover(anim: DetectedAnimation): boolean {
   return /(hover|link|nav|button|btn|color|background)/.test(hay) || /color|background/.test(prop);
 }
 
-/** Scan the captured stylesheet + raw tween for `scale(0)` / `scale: 0` entrances. */
+/** Pull the body of a specific `@keyframes <name> { … }` block out of a stylesheet. */
+function keyframesBlock(css: string, name: string): string | null {
+  if (!name) return null;
+  // Escape the name for use in a RegExp, then match its @keyframes block non-greedily.
+  const safe = name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const re = new RegExp(`@(?:-webkit-)?keyframes\\s+${safe}\\s*\\{([\\s\\S]*?)\\}\\s*\\}`, "i");
+  const m = css.match(re);
+  return m ? m[1] : null;
+}
+
+// scale(0), scale(0.0), scale(.0), scale3d(0,…), scale: 0 — but never scale(0.95).
+const SCALE_ZERO = /\bscale3?d?\(\s*(?:0(?:\.0+)?|\.0+)\s*[,)]/;
+const SCALE_ZERO_PROP = /\bscale\s*:\s*(?:0(?:\.0+)?|\.0+)\b/;
+
+/**
+ * Detect a genuine scale-from-0 entrance using only per-element signals — never a
+ * whole-stylesheet scan, which would attribute any page-wide `scale(0)` to this
+ * element. Reliable signals: a JS tween's own `scale: 0` var, or a `scale(0)` inside
+ * this animation's own named `@keyframes` block.
+ */
 function hasScaleFromZero(anim: DetectedAnimation): boolean {
-  const css = anim.preview_css ?? "";
-  // scale(0), scale(0,0), scale3d(0,...), scale: 0 — but not scale(0.95) etc.
-  if (/\bscale3?d?\(\s*0\s*[,)]/.test(css)) return true;
-  if (/transform\s*:\s*scale\(\s*0\s*\)/.test(css)) return true;
   const raw = rawParams(anim);
   const vars = (raw.vars ?? raw) as Record<string, unknown>;
   if (vars && (vars.scale === 0 || vars.scale === "0")) return true;
+
+  if (anim.source === "css-keyframes" && typeof raw.name === "string") {
+    const block = keyframesBlock(anim.preview_css ?? "", raw.name);
+    if (block && (SCALE_ZERO.test(block) || SCALE_ZERO_PROP.test(block))) return true;
+  }
   return false;
 }
 
@@ -270,7 +290,7 @@ function cohesionFindings(anims: DetectedAnimation[]): AnimationFinding[] {
       category: "cohesion",
       severity: "suggestion",
       title: `${curves.size} distinct hand-rolled easing curves`,
-      detail: `The page uses ${curves.size} different cubic-bezier curves. Five almost-matching curves is a consolidation smell.`,
+      detail: `The page uses ${curves.size} different cubic-bezier curves. A handful of almost-matching curves is a consolidation smell.`,
       why: "Inconsistent easing makes motion feel incoherent across components.",
       fix: `Consolidate onto shared tokens — e.g. \`--ease-out: ${EASING_CURVES.easeOut}\` and \`--ease-in-out: ${EASING_CURVES.easeInOut}\`.`,
       standard: "Curves and durations should live as shared tokens.",

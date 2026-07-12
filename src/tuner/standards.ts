@@ -83,17 +83,21 @@ export const EMIL_EASING_PRESETS: EasingPreset[] = [
   { name: "linear", value: "linear", description: "Constant speed — marquees, progress, spinners." },
 ];
 
-/** Regexes that identify a CSS/JS easing keyword as `ease-in` (banned on UI). */
+/** Identify a CSS/JS easing keyword as `ease-in` (banned on UI). */
 export function isEaseIn(timing: string): boolean {
   const t = timing.trim().toLowerCase();
   if (t === "ease-in") return true;
-  // ease-in cubic-beziers accelerate from rest: first control-point y ≈ 0 and x > 0.
-  const m = t.match(/cubic-bezier\(\s*([\d.]+)\s*,\s*(-?[\d.]+)\s*,/);
+  // A true ease-in accelerates the whole way: it starts flat (x1 leads, y1 ≈ 0) AND
+  // keeps accelerating into the finish (x2 near 1). An ease-in-out also starts flat
+  // but *decelerates* at the end (small x2), so we must read the second control point
+  // too — otherwise strong ease-in-out curves (e.g. cubic-bezier(0.77,0,0.175,1)) get
+  // misflagged as ease-in.
+  const m = t.match(/cubic-bezier\(\s*([\d.]+)\s*,\s*(-?[\d.]+)\s*,\s*([\d.]+)\s*,\s*(-?[\d.]+)\s*\)/);
   if (m) {
     const x1 = Number(m[1]);
     const y1 = Number(m[2]);
-    // Accelerating-in shape: noticeable horizontal lead-in with ~no vertical rise.
-    if (x1 >= 0.3 && y1 <= 0.05) return true;
+    const x2 = Number(m[3]);
+    if (x1 >= 0.3 && y1 <= 0.05 && x2 >= 0.6) return true;
   }
   return false;
 }

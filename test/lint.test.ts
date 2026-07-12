@@ -80,22 +80,49 @@ describe("lintAnimation", () => {
     assert.equal(f.find((x) => x.category === "duration"), undefined, "420ms modal should be within budget");
   });
 
-  it("flags scale(0) entrances from captured CSS", () => {
+  it("flags scale(0) inside the animation's own keyframes block", () => {
     const f = lintAnimation(anim({
-      preview_css: ".el { transform: scale(0); }",
-      rawParams: { property: "transform", duration: "200ms", timing: "ease-out" },
+      source: "css-keyframes",
+      preview_css: "@keyframes pop { from { transform: scale(0); } to { transform: scale(1); } }",
+      rawParams: { name: "pop", duration: "200ms", timing: "ease-out" },
     }));
     const phys = f.find((x) => x.category === "physicality");
     assert.ok(phys, "expected a physicality finding");
     assert.equal(phys!.suggested, "scale(0.95)");
   });
 
+  it("flags a JS tween that scales from 0", () => {
+    const f = lintAnimation(anim({
+      source: "gsap",
+      rawParams: { scale: 0, duration: "200ms" },
+    }));
+    assert.ok(f.some((x) => x.category === "physicality"));
+  });
+
   it("does not flag scale(0.95)", () => {
     const f = lintAnimation(anim({
-      preview_css: ".el { transform: scale(0.95); }",
-      rawParams: { property: "transform", duration: "200ms", timing: "ease-out" },
+      source: "css-keyframes",
+      preview_css: "@keyframes pop { from { transform: scale(0.95); } to { transform: scale(1); } }",
+      rawParams: { name: "pop", duration: "200ms", timing: "ease-out" },
     }));
     assert.equal(f.find((x) => x.category === "physicality"), undefined);
+  });
+
+  it("does not attribute an unrelated page-wide scale(0) to this element", () => {
+    const f = lintAnimation(anim({
+      source: "css-keyframes",
+      preview_css: "@keyframes other { from { transform: scale(0); } } @keyframes pop { from { opacity: 0; } }",
+      rawParams: { name: "pop", duration: "200ms", timing: "ease-out" },
+    }));
+    assert.equal(f.find((x) => x.category === "physicality"), undefined, "scale(0) in a different keyframes block must not fire");
+  });
+
+  it("does not misflag a strong ease-in-out curve as ease-in", () => {
+    const f = lintAnimation(anim({
+      common_name: "Panel slide",
+      rawParams: { property: "transform", duration: "260ms", timing: "cubic-bezier(0.77, 0, 0.175, 1)" },
+    }));
+    assert.equal(f.find((x) => x.category === "easing"), undefined, "Emil's ease-in-out must not be flagged");
   });
 
   it("flags transition: all and layout-property animation", () => {
