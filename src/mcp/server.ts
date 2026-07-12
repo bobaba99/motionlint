@@ -29,7 +29,7 @@ const TOOLS = [
         model: { type: "string", description: "Model override." },
         wait_for: { type: "string", description: "CSS selector or 'networkidle' to wait for before capture." },
         record: { type: "boolean", description: "Record a video of the capture." },
-        format: { type: "string", enum: ["md", "json", "sarif"], description: "Output format (default: md)." },
+        format: { type: "string", enum: ["md", "json", "sarif", "html"], description: "Output format (default: md). 'html' is a polished, shareable report." },
         max_findings: { type: "number", description: "Keep only the top N findings, severity-ordered (agent focus)." },
         max_pr_annotations: { type: "number", description: "SARIF only: emit at most N results per report, severity-ordered (reviewer fatigue)." },
         new_only: { type: "boolean", description: "Report only findings not seen in prior runs of the same URL." },
@@ -48,7 +48,7 @@ const TOOLS = [
         viewports: { type: "array", items: { type: "string" } },
         provider: { type: "string" },
         model: { type: "string" },
-        format: { type: "string", enum: ["md", "json", "sarif"] },
+        format: { type: "string", enum: ["md", "json", "sarif", "html"] },
         max_findings: { type: "number", description: "Keep only the top N findings per route, severity-ordered." },
         max_pr_annotations: { type: "number", description: "SARIF only: emit at most N results per route report, severity-ordered." },
         new_only: { type: "boolean", description: "Report only findings not seen in prior runs of each route." },
@@ -286,7 +286,11 @@ export async function startMcpServer(): Promise<void> {
     }
     if (lastReport.path) {
       const text = await readFile(lastReport.path, "utf8");
-      const mt = lastReport.format === "md" ? "text/markdown" : "application/json";
+      const mt =
+        lastReport.format === "md" ? "text/markdown"
+        : lastReport.format === "html" ? "text/html"
+        : lastReport.format === "sarif" || lastReport.format === "json" ? "application/json"
+        : "text/plain";
       return { contents: [{ uri: req.params.uri, mimeType: mt, text }] };
     }
     return { contents: [{ uri: req.params.uri, mimeType: "text/markdown", text: lastReport.rendered }] };
