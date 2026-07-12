@@ -170,4 +170,4 @@ export interface MotionLintConfig {
   auth: AuthConfig;
 }
 
-export type OutputFormat = "md" | "json" | "sarif";
+export type OutputFormat = "md" | "json" | "sarif" | "html";

@@ -12,6 +12,7 @@ import { emptyStore, loadMemory, recordFindings, saveMemory, type MemoryStore } 
 import { renderMarkdownReport } from "./report/markdown.js";
 import { renderJsonReport } from "./report/json.js";
 import { renderSarifReport } from "./report/sarif.js";
+import { renderReviewHtmlReport } from "./report/html.js";
 import type {
   AnalysisEntry,
   CaptureResult,
@@ -199,6 +200,9 @@ export async function runReview(opts: RunReviewOptions): Promise<RunReviewResult
       rendered = renderSarifReport(report, {
         maxAnnotations: opts.maxPrAnnotations !== undefined ? opts.maxPrAnnotations : config.maxPrAnnotations,
       });
+      break;
+    case "html":
+      rendered = renderReviewHtmlReport(report);
       break;
     default:
       rendered = renderMarkdownReport(report, {

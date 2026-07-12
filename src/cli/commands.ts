@@ -7,7 +7,7 @@ import { parseInteractionsFromString } from "../capture/interactions.js";
 import { summarize } from "./output.js";
 import type { OutputFormat, IssueSeverity } from "../types.js";
 
-const VALID_FORMATS: ReadonlyArray<OutputFormat> = ["md", "json", "sarif"];
+const VALID_FORMATS: ReadonlyArray<OutputFormat> = ["md", "json", "sarif", "html"];
 const VALID_SEVERITIES: ReadonlyArray<IssueSeverity> = ["critical", "warning", "suggestion"];
 
 function fail(message: string): never {
@@ -121,6 +121,24 @@ export function buildProgram(): Command {
     .action(async (url: string, opts: TuneCliOptions) => {
       try {
         await runTuneCommand(url, opts);
+      } catch (err) {
+        fail((err as Error).message);
+      }
+    });
+
+  program
+    .command("audit <url>")
+    .description("Lint a page's animations against Emil Kowalski's motion standards (easing, duration, physicality). Deterministic — no vision model needed.")
+    .option("-o, --output <path>", "Path to write the HTML audit report.", ".motionlint/audit/index.html")
+    .option("--json <path>", "Also write the raw audit JSON to this path.")
+    .option("--viewport <wxh>", "Capture viewport, e.g. 1280x800.", "1280x800")
+    .option("--settle <ms>", "Time to wait after load for animations to register.", "1500")
+    .option("--open", "Open the generated report in the default browser.", false)
+    .option("--ci", "Exit non-zero if any critical finding is reported.", false)
+    .option("--quiet", "Suppress progress output.", false)
+    .action(async (url: string, opts: AuditCliOptions) => {
+      try {
+        await runAuditCommand(url, opts);
       } catch (err) {
         fail((err as Error).message);
       }
@@ -277,6 +295,68 @@ async function runTuneCommand(url: string, opts: TuneCliOptions): Promise<void> 
     const opener = process.platform === "darwin" ? "open" : process.platform === "win32" ? "start" : "xdg-open";
     spawn(opener, [outPath], { detached: true, stdio: "ignore" }).unref();
   }
+}
+
+interface AuditCliOptions {
+  output?: string;
+  json?: string;
+  viewport?: string;
+  settle?: string;
+  open?: boolean;
+  ci?: boolean;
+  quiet?: boolean;
+}
+
+async function runAuditCommand(url: string, opts: AuditCliOptions): Promise<void> {
+  const { extractAnimations } = await import("../tuner/extract.js");
+  const { auditAnimations } = await import("../tuner/lint.js");
+  const { renderAnimationAuditHtml } = await import("../tuner/audit_report.js");
+  const { mkdir, writeFile } = await import("node:fs/promises");
+  const { dirname, resolve: resolvePath } = await import("node:path");
+
+  const [w, h] = (opts.viewport ?? "1280x800").split("x").map(Number);
+  const settle = Number(opts.settle ?? 1500);
+
+  if (!opts.quiet) console.error(kleur.cyan(`→ Auditing animations on ${url}…`));
+  const capture = await extractAnimations({
+    url,
+    viewport: { width: w || 1280, height: h || 800 },
+    settleMs: settle,
+  });
+  const audit = auditAnimations(capture);
+
+  if (!opts.quiet) {
+    console.error(kleur.gray(`  measured ${audit.total_animations} animation(s)`));
+    const sev = (n: number, label: string, color: (s: string) => string) => (n > 0 ? color(`${n} ${label}`) : kleur.gray(`0 ${label}`));
+    console.error(
+      `  ${sev(audit.critical_count, "critical", kleur.red)} · ${sev(audit.warning_count, "warning", kleur.yellow)} · ${sev(audit.suggestion_count, "suggestion", kleur.gray)} · score ${audit.score}/100`,
+    );
+    for (const f of audit.findings.slice(0, 12)) {
+      const mark = f.severity === "critical" ? kleur.red("✗") : f.severity === "warning" ? kleur.yellow("▲") : kleur.gray("•");
+      console.error(`    ${mark} [${f.category}] ${f.title} — ${kleur.dim(f.common_name)}`);
+    }
+    if (audit.findings.length > 12) console.error(kleur.dim(`    …and ${audit.findings.length - 12} more (see the report)`));
+  }
+
+  const outPath = resolvePath(opts.output ?? ".motionlint/audit/index.html");
+  await mkdir(dirname(outPath), { recursive: true });
+  await writeFile(outPath, renderAnimationAuditHtml(audit), "utf8");
+  console.error(kleur.green(`  report → ${outPath}`));
+  console.error(kleur.gray(`  open with: file://${outPath}`));
+
+  if (opts.json) {
+    await mkdir(dirname(resolvePath(opts.json)), { recursive: true });
+    await writeFile(resolvePath(opts.json), JSON.stringify(audit, null, 2), "utf8");
+    console.error(kleur.green(`  json   → ${opts.json}`));
+  }
+
+  if (opts.open) {
+    const { spawn } = await import("node:child_process");
+    const opener = process.platform === "darwin" ? "open" : process.platform === "win32" ? "start" : "xdg-open";
+    spawn(opener, [outPath], { detached: true, stdio: "ignore" }).unref();
+  }
+
+  if (opts.ci && audit.critical_count > 0) process.exit(1);
 }
 
 interface EvalCliOptions {
@@ -497,7 +577,8 @@ async function runReviewCommand(rawUrl: string, opts: ReviewOptions): Promise<vo
     });
 
     if (!opts.quiet) {
-      if (format === "md") {
+      // md/html write a file and print the terminal summary; json/sarif stream the payload.
+      if (format === "md" || format === "html") {
         process.stdout.write(summarize(result.report) + "\n");
       } else {
         process.stdout.write(result.rendered + "\n");
