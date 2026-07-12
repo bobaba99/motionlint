@@ -51,6 +51,12 @@ motionlint flow --spec flows/signup.json
 # Detect every animation on a page → interactive HTML tuner.
 motionlint tune http://localhost:3000
 
+# Lint a page's motion against Emil Kowalski's standards → polished HTML audit (no LLM).
+motionlint audit http://localhost:3000 --open
+
+# Polished, shareable HTML review with embedded screenshots + before/after fixes.
+motionlint review http://localhost:3000 --format html -o review.html
+
 # CI mode — non-zero exit on critical issues, SARIF output for code scanning.
 motionlint review https://staging.acme.dev --ci --threshold critical --format sarif -o ux.sarif
 
@@ -288,7 +294,8 @@ This:
 3. Generates a self-contained interactive HTML page at `.motionlint/tuner/index.html` (auto-opens with `--open`):
    - **Live preview surface** per animation (Shadow DOM — no iframes, no flash, themed to the source page).
    - **Sliders** for duration / delay / stagger / speed.
-   - **Easing-preset dropdown** (linear, ease-out, spring snappy, spring bouncy, Material decelerate, custom cubic-bezier).
+   - **Easing-preset dropdown** — Emil Kowalski's strong curves lead (ease-out, ease-in-out, iOS drawer), then the softer/decorative options.
+   - **Inline standards linting** — each card flags where the animation deviates from the motion standards (severity badge, fix, suggested value), with a header score.
    - **Comments box** per animation for design rationale.
 4. Exports a markdown file plus a Claude-Code-ready prompt with a structured `changes[]` JSON block. Paste that into CC and it edits your codebase to apply the new parameters.
 
@@ -300,6 +307,25 @@ $ motionlint tune http://localhost:3000
   tuner → /Users/you/proj/.motionlint/tuner/index.html
   open with: file:///Users/you/proj/.motionlint/tuner/index.html
 ```
+
+## Animation standards — `motionlint audit`
+
+MotionLint encodes [Emil Kowalski's](https://emilkowal.ski/) design-engineering standards as a **deterministic linter** — no vision model, no API key, no cost. `motionlint audit` instruments the page, reads the real timing/easing/transform values every animation is running, and grades them:
+
+| Category | What it catches | The standard |
+| --- | --- | --- |
+| **Easing** | `ease-in` on UI; weak built-in curves on deliberate entrances | Entering/exiting → strong ease-out `cubic-bezier(0.23, 1, 0.32, 1)`; never `ease-in` |
+| **Duration** | UI motion over the 300ms ceiling (modals/drawers get 200–500ms) | A 180ms transition feels snappier than a 400ms one; exits ~20% faster |
+| **Physicality** | `scale(0)` entrances | Nothing appears from nothing — start from `scale(0.95)` + `opacity: 0` |
+| **Performance** | `transition: all`, animating layout properties, stray infinite loops | Animate `transform` and `opacity` only — they skip layout/paint |
+| **Cohesion** | Hand-rolled easing-curve sprawl | Curves and durations should live as shared tokens |
+
+```bash
+motionlint audit http://localhost:3000 --open          # polished HTML report, scored 0–100
+motionlint audit http://localhost:3000 --json audit.json --ci   # machine-readable; non-zero on critical
+```
+
+The report pairs every finding with a **before → after** panel; easing findings render a live cubic-bezier curve comparison so the fix is visible, not just described. The same standards feed the `flow` review prompt (so vision findings cite concrete rules) and appear inline in the Animation Tuner.
 
 ## MCP server — tools, resources, deployment
 
