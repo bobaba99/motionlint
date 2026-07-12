@@ -1,4 +1,5 @@
 import type { FlowSpec, FlowStepResult } from "../flow/types.js";
+import { ANIMATION_STANDARDS_PROMPT } from "./animation_standards.js";
 
 const FLOW_SYSTEM_PROMPT = `You are a senior UX designer and frontend engineer reviewing a USER FLOW captured as a contact sheet of frames.
 
@@ -54,7 +55,7 @@ export interface FlowPromptOptions {
 }
 
 export function buildFlowPrompt(opts: FlowPromptOptions): string {
-  const lines: string[] = [FLOW_SYSTEM_PROMPT];
+  const lines: string[] = [FLOW_SYSTEM_PROMPT, "", ANIMATION_STANDARDS_PROMPT];
 
   if (opts.preferences_md && opts.preferences_md.trim()) {
     lines.push("");
