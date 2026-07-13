@@ -301,12 +301,70 @@ function cohesionFindings(anims: DetectedAnimation[]): AnimationFinding[] {
   return findings;
 }
 
+/**
+ * Page-level accessibility checks (Emil Standard 8). These read the captured
+ * stylesheet text, so they only fire when we actually harvested CSS — with no
+ * stylesheet in hand we have no evidence a rule is *absent*, and stay silent
+ * rather than raise a false positive.
+ */
+function accessibilityFindings(capture: TunerCapture): AnimationFinding[] {
+  const findings: AnimationFinding[] = [];
+  const css = capture.animations.find((a) => a.preview_css && a.preview_css.trim())?.preview_css ?? "";
+  if (!css) return findings;
+
+  // — Reduced motion: movement-based animation with no reduced-motion escape hatch —
+  const hasMovement = capture.animations.some((a) => {
+    if (a.source === "css-keyframes") return true;
+    const prop = (transitionProperty(a) ?? "").toLowerCase();
+    return /\b(transform|all)\b/.test(prop);
+  });
+  if (hasMovement && !/prefers-reduced-motion/i.test(css)) {
+    findings.push({
+      anim_id: "*",
+      selector: "(project-wide)",
+      common_name: "Page stylesheet",
+      category: "accessibility",
+      severity: "warning",
+      title: "No prefers-reduced-motion path",
+      detail: "The page animates movement (transform / keyframes) but ships no `@media (prefers-reduced-motion: reduce)` rule.",
+      why: "Motion-sensitive users get no relief; large movement can trigger nausea or vestibular symptoms.",
+      fix: "Add `@media (prefers-reduced-motion: reduce)` that drops transform-based motion while keeping opacity/colour transitions.",
+      standard: "Honour prefers-reduced-motion — gentler, not zero.",
+      current: "(no reduced-motion rule)",
+      suggested: "@media (prefers-reduced-motion: reduce) { … }",
+    });
+  }
+
+  // — Hover gating: hover motion that isn't behind (hover: hover) fires on touch taps —
+  const hasHover = capture.animations.some(looksLikeHover);
+  if (hasHover && !/@media[^{]*hover\s*:\s*hover/i.test(css)) {
+    findings.push({
+      anim_id: "*",
+      selector: "(project-wide)",
+      common_name: "Hover motion",
+      category: "accessibility",
+      severity: "suggestion",
+      title: "Hover motion isn't gated for touch",
+      detail: "Hover-triggered motion isn't wrapped in `@media (hover: hover) and (pointer: fine)`.",
+      why: "Touch devices fire a synthetic hover on tap, so the animation plays on every touch — a false positive the user never intended.",
+      fix: "Gate hover animations behind `@media (hover: hover) and (pointer: fine)`.",
+      standard: "Gate hover motion behind (hover: hover) and (pointer: fine).",
+      current: "(ungated :hover)",
+      suggested: "@media (hover: hover) and (pointer: fine) { … }",
+    });
+  }
+
+  return findings;
+}
+
 /** Lint an entire tuner capture and produce a scored audit. */
 export function auditAnimations(capture: TunerCapture): AnimationAudit {
   const perAnim = capture.animations.flatMap(lintAnimation);
-  const findings = [...perAnim, ...cohesionFindings(capture.animations)].sort(
-    (a, b) => severityRank(a.severity) - severityRank(b.severity),
-  );
+  const findings = [
+    ...perAnim,
+    ...cohesionFindings(capture.animations),
+    ...accessibilityFindings(capture),
+  ].sort((a, b) => severityRank(a.severity) - severityRank(b.severity));
 
   const critical_count = findings.filter((f) => f.severity === "critical").length;
   const warning_count = findings.filter((f) => f.severity === "warning").length;

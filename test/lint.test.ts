@@ -174,6 +174,67 @@ describe("auditAnimations", () => {
   });
 });
 
+describe("accessibility (Standard 8)", () => {
+  it("flags a page that animates movement but ships no prefers-reduced-motion path", () => {
+    const audit = auditAnimations(capture([
+      anim({
+        selector: ".hero",
+        common_name: "Hero",
+        preview_css: ".hero { transition: transform .2s; }",
+        rawParams: { property: "transform", duration: "200ms", timing: "cubic-bezier(0.23, 1, 0.32, 1)" },
+      }),
+    ]));
+    const a11y = audit.findings.find((f) => f.category === "accessibility" && /reduced-motion/i.test(f.title));
+    assert.ok(a11y, "expected a reduced-motion accessibility finding");
+    assert.equal(a11y!.severity, "warning");
+  });
+
+  it("stays quiet when a prefers-reduced-motion rule is present", () => {
+    const audit = auditAnimations(capture([
+      anim({
+        selector: ".hero",
+        common_name: "Hero",
+        preview_css: "@media (prefers-reduced-motion: reduce) { .hero { transition: none; } } .hero { transition: transform .2s; }",
+        rawParams: { property: "transform", duration: "200ms", timing: "cubic-bezier(0.23, 1, 0.32, 1)" },
+      }),
+    ]));
+    assert.equal(audit.findings.find((f) => f.category === "accessibility"), undefined);
+  });
+
+  it("makes no accessibility claim when no stylesheet CSS was captured", () => {
+    const audit = auditAnimations(capture([
+      anim({ rawParams: { property: "transform", duration: "200ms", timing: "cubic-bezier(0.23, 1, 0.32, 1)" } }),
+    ]));
+    assert.equal(audit.findings.find((f) => f.category === "accessibility"), undefined, "no CSS → no evidence → no finding");
+  });
+
+  it("flags ungated hover motion", () => {
+    const audit = auditAnimations(capture([
+      anim({
+        selector: ".nav-link",
+        common_name: "Nav link",
+        preview_css: ".nav-link { transition: color .2s; }",
+        rawParams: { property: "color", duration: "200ms", timing: "ease" },
+      }),
+    ]));
+    const a11y = audit.findings.find((f) => f.category === "accessibility" && /hover/i.test(f.title));
+    assert.ok(a11y, "expected an ungated-hover accessibility finding");
+    assert.equal(a11y!.severity, "suggestion");
+  });
+
+  it("stays quiet when hover motion is gated behind (hover: hover)", () => {
+    const audit = auditAnimations(capture([
+      anim({
+        selector: ".nav-link",
+        common_name: "Nav link",
+        preview_css: "@media (hover: hover) and (pointer: fine) { .nav-link:hover { color: red; } } .nav-link { transition: color .2s; }",
+        rawParams: { property: "color", duration: "200ms", timing: "ease" },
+      }),
+    ]));
+    assert.equal(audit.findings.find((f) => f.category === "accessibility" && /hover/i.test(f.title)), undefined);
+  });
+});
+
 function severityValue(s: string): number {
   return s === "critical" ? 0 : s === "warning" ? 1 : 2;
 }
