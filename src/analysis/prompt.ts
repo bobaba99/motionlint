@@ -68,6 +68,8 @@ export interface PromptOptions {
   mosaic?: { viewports: Array<{ name: string; width: number; height: number }> };
   /** Notable page elements with stable refs — lets the model ground findings via "element_ref". */
   elements?: Array<{ ref: string; selector: string; label: string; rect: { x: number; y: number; w: number; h: number } }>;
+  /** Interaction-state grid mode — the image is a grid of element states, not a page. */
+  stateGrid?: { states: readonly string[]; elements: string[] };
 }
 
 export async function buildPrompt(opts: PromptOptions): Promise<string> {
@@ -98,6 +100,17 @@ export async function buildPrompt(opts: PromptOptions): Promise<string> {
       `\n\n## DOM measurements (ground truth — do not trust pixels alone)\n` +
       `The following JSON contains computed measurements extracted from the live page. Treat it as authoritative for sizes, counts, and overflow. Cross-check your visual judgment against it.\n` +
       "```json\n" + JSON.stringify(opts.domSnapshot, null, 2) + "\n```",
+    );
+  }
+
+  if (opts.stateGrid) {
+    parts.push(
+      `\n\n## Interaction-state grid mode\n` +
+      `This image is NOT a page screenshot. It is a grid: each row is one interactive element (${opts.stateGrid.elements.map((e) => `"${e}"`).join(", ")}), ` +
+      `and the columns show that element in its ${opts.stateGrid.states.join(" / ")} states, captured live.\n` +
+      `Judge ONLY interaction affordances by comparing columns within each row: does hover give visible feedback, is the focus ring clearly visible (WCAG 2.4.7), does active/pressed state respond, are the states distinguishable from each other and from default? ` +
+      `Report findings under the "interaction" category (or "contrast" for low-visibility focus indicators), naming the element row in the location field. ` +
+      `Ignore layout/typography/spacing dimensions — the grid's own chrome is not the subject.`,
     );
   }
 

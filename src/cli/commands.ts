@@ -40,6 +40,7 @@ export function buildProgram(): Command {
     .option("--record", "Record a video of the capture (Playwright .webm).", false)
     .option("--no-full-page", "Capture only the viewport (above-the-fold), not full page.")
     .option("--interactions <spec>", "Path to a file or inline JSON with interaction steps.")
+    .option("--state-grid", "Also capture an interaction-state grid (default/hover/focus/active per element) and review it.", false)
     .option("--ci", "Exit with non-zero code if issues exceed the configured threshold.", false)
     .option("--threshold <severity>", `CI severity threshold: ${VALID_SEVERITIES.join("|")}.`)
     .option("--max-findings <n>", "Keep only the top N findings per run, severity-ordered (agent focus).")
@@ -478,6 +479,7 @@ interface ReviewOptions {
   record?: boolean;
   fullPage?: boolean;
   interactions?: string;
+  stateGrid?: boolean;
   ci?: boolean;
   threshold?: string;
   maxFindings?: string;
@@ -563,6 +565,7 @@ async function runReviewCommand(rawUrl: string, opts: ReviewOptions): Promise<vo
       record: opts.record ?? false,
       fullPage: opts.fullPage ?? true,
       interactions,
+      stateGrid: opts.stateGrid ?? false,
       format,
       outputPath: opts.output === false ? null : opts.output ?? undefined,
       embedScreenshots: opts.embed ?? false,

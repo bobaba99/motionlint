@@ -2,7 +2,7 @@ import { mkdir, writeFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import { createHash } from "node:crypto";
 import type { CaptureOptions, CaptureResult, InteractionStep, Viewport } from "../types.js";
-import { launchBrowserSession } from "./browser.js";
+import { applyPageAuth, launchBrowserSession } from "./browser.js";
 import { captureDomSnapshot, type DomSnapshot } from "./dom.js";
 
 function slug(input: string): string {
@@ -21,20 +21,6 @@ function urlSlug(url: string): string {
 
 async function ensureDir(dir: string): Promise<void> {
   await mkdir(dir, { recursive: true });
-}
-
-async function applyLocalStorage(
-  page: import("playwright").Page,
-  origin: string,
-  data: Record<string, string>,
-): Promise<void> {
-  await page.addInitScript(({ origin: o, data: d }) => {
-    if (typeof window !== "undefined" && window.location.origin === o) {
-      for (const [k, v] of Object.entries(d)) {
-        try { window.localStorage.setItem(k, v as string); } catch { /* ignore */ }
-      }
-    }
-  }, { origin, data });
 }
 
 async function runInteraction(page: import("playwright").Page, step: InteractionStep): Promise<void> {
@@ -70,18 +56,7 @@ export async function captureScreenshot(opts: CaptureOptions): Promise<CaptureRe
   const page = await session.context.newPage();
 
   try {
-    if (opts.auth?.localStorage) {
-      try {
-        const origin = new URL(opts.url).origin;
-        await applyLocalStorage(page, origin, opts.auth.localStorage);
-      } catch {
-        /* invalid url — skip */
-      }
-    }
-
-    if (opts.auth?.beforeNavigate) {
-      await page.addInitScript(opts.auth.beforeNavigate);
-    }
+    await applyPageAuth(page, opts.url, opts.auth);
 
     await page.goto(opts.url, {
       waitUntil: (opts.waitFor === "networkidle" ? "networkidle" : "load"),

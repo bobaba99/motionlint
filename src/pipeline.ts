@@ -1,6 +1,7 @@
 import { mkdir, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { captureScreenshot } from "./capture/screenshot.js";
+import { captureStateGrid, GRID_STATES } from "./capture/states.js";
 import { buildPrompt } from "./analysis/prompt.js";
 import { resolveElementRefs } from "./analysis/annotate.js";
 import { resolveProvider } from "./providers/resolver.js";
@@ -52,6 +53,8 @@ export interface RunReviewOptions {
   newOnly?: boolean;
   /** Token budget override for this run; falls back to config.resources.maxTokensPerRun. */
   maxTokens?: number | null;
+  /** Also capture an interaction-state grid (hover/focus/active per element) and review it. */
+  stateGrid?: boolean;
   onProgress?: (event: ProgressEvent) => void;
 }
 
@@ -136,6 +139,37 @@ export async function runReview(opts: RunReviewOptions): Promise<RunReviewResult
     captures.push(capture);
   }
 
+  // Interaction-state grid: one extra pseudo-viewport imaging each interactive
+  // element across default/hover/focus/active. Best-effort — a page with no
+  // usable elements simply contributes nothing.
+  let gridElements: string[] | null = null;
+  if (opts.stateGrid) {
+    const gridViewport = viewports[viewports.length - 1];
+    try {
+      const grid = await captureStateGrid({
+        url,
+        viewport: gridViewport,
+        waitFor: config.waitFor,
+        waitTimeout: config.waitTimeout,
+        auth: config.auth,
+      });
+      if (grid) {
+        gridElements = grid.elements;
+        const capture: CaptureResult = {
+          url,
+          viewport: { name: "interaction-states", width: grid.width, height: grid.height },
+          screenshot: grid.buffer,
+          fullPage: false,
+          timestamp: new Date().toISOString(),
+        };
+        onProgress?.({ type: "capture_done", capture });
+        captures.push(capture);
+      }
+    } catch {
+      /* grid capture is an enhancement, never a run failure */
+    }
+  }
+
   const tokenLimit = opts.maxTokens !== undefined ? opts.maxTokens : config.resources.maxTokensPerRun;
   let usage = emptyRunUsage(typeof tokenLimit === "number" && tokenLimit > 0 ? tokenLimit : null);
 
@@ -149,10 +183,12 @@ export async function runReview(opts: RunReviewOptions): Promise<RunReviewResult
       continue;
     }
     onProgress?.({ type: "analyze_start", viewport: capture.viewport });
+    const isGrid = capture.viewport.name === "interaction-states" && gridElements !== null;
     const prompt = await buildPrompt({
       viewportName: capture.viewport.name,
       rulesPath: opts.rulesPath ?? config.rules,
       elements: capture.dom?.elements,
+      ...(isGrid ? { stateGrid: { states: GRID_STATES, elements: gridElements as string[] } } : {}),
     });
     const analysis = resolveElementRefs(
       await provider.analyze(capture.screenshot, prompt, capture.viewport.name),
