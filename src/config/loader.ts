@@ -18,6 +18,7 @@ const DEFAULT_CONFIG: MotionLintConfig = {
   videoDir: ".motionlint/videos",
   reportDir: ".motionlint/reports",
   rules: null,
+  learnedHeuristics: ".motionlint/prompt-addenda.md",
   record: false,
   maxFindings: null,
   maxPrAnnotations: null,

@@ -4,6 +4,7 @@ import { captureScreenshot } from "./capture/screenshot.js";
 import { captureStateGrid, GRID_STATES } from "./capture/states.js";
 import { buildPrompt } from "./analysis/prompt.js";
 import { resolveElementRefs } from "./analysis/annotate.js";
+import { loadAddendaForPrompt } from "./eval/evolve.js";
 import { resolveProvider } from "./providers/resolver.js";
 import { sharedRateLimiter, withRateLimit } from "./resources/limiter.js";
 import { addUsage, budgetExhausted, emptyRunUsage } from "./resources/usage.js";
@@ -173,6 +174,9 @@ export async function runReview(opts: RunReviewOptions): Promise<RunReviewResult
   const tokenLimit = opts.maxTokens !== undefined ? opts.maxTokens : config.resources.maxTokensPerRun;
   let usage = emptyRunUsage(typeof tokenLimit === "number" && tokenLimit > 0 ? tokenLimit : null);
 
+  // Learned heuristics from `eval --evolve`, if the project has run it.
+  const learned = config.learnedHeuristics ? await loadAddendaForPrompt(config.learnedHeuristics) : null;
+
   const analyses: AnalysisEntry[] = [];
   for (const capture of captures) {
     // Cost ceiling: once the running total crosses the budget, stop paying for
@@ -188,6 +192,7 @@ export async function runReview(opts: RunReviewOptions): Promise<RunReviewResult
       viewportName: capture.viewport.name,
       rulesPath: opts.rulesPath ?? config.rules,
       elements: capture.dom?.elements,
+      learned,
       ...(isGrid ? { stateGrid: { states: GRID_STATES, elements: gridElements as string[] } } : {}),
     });
     const analysis = resolveElementRefs(

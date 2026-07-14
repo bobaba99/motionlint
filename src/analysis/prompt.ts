@@ -70,6 +70,8 @@ export interface PromptOptions {
   elements?: Array<{ ref: string; selector: string; label: string; rect: { x: number; y: number; w: number; h: number } }>;
   /** Interaction-state grid mode — the image is a grid of element states, not a page. */
   stateGrid?: { states: readonly string[]; elements: string[] };
+  /** Learned heuristics distilled from eval misses (bullet lines), carried into the rubric. */
+  learned?: string | null;
 }
 
 export async function buildPrompt(opts: PromptOptions): Promise<string> {
@@ -100,6 +102,14 @@ export async function buildPrompt(opts: PromptOptions): Promise<string> {
       `\n\n## DOM measurements (ground truth — do not trust pixels alone)\n` +
       `The following JSON contains computed measurements extracted from the live page. Treat it as authoritative for sizes, counts, and overflow. Cross-check your visual judgment against it.\n` +
       "```json\n" + JSON.stringify(opts.domSnapshot, null, 2) + "\n```",
+    );
+  }
+
+  if (opts.learned) {
+    parts.push(
+      `\n\n## Learned heuristics (distilled from prior eval runs)\n` +
+      `Past evaluations show these issue patterns are easy to miss on this rubric. Check each one deliberately:\n` +
+      opts.learned.trim(),
     );
   }
 

@@ -59,6 +59,9 @@ motionlint tune http://localhost:3000
 # Lint a page's motion against Emil Kowalski's standards → polished HTML audit (no LLM).
 motionlint audit http://localhost:3000 --open
 
+# Track provider quality across runs + teach the reviewer from eval misses.
+motionlint eval --provider anthropic --evolve
+
 # Interaction affordances — grid each element's default/hover/focus/active states.
 motionlint review http://localhost:3000 --state-grid
 

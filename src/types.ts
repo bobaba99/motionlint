@@ -190,6 +190,8 @@ export interface MotionLintConfig {
   videoDir: string;
   reportDir: string;
   rules: string | null;
+  /** Learned-heuristics file (written by `eval --evolve`) included in review prompts when present. null disables. */
+  learnedHeuristics: string | null;
   record: boolean;
   /** Per-run output cap: keep only the top N findings, severity-ordered. null = uncapped. */
   maxFindings: number | null;

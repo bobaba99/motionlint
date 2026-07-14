@@ -5,6 +5,8 @@ import { runReview } from "../pipeline.js";
 import { loadConfig } from "../config/loader.js";
 import { parseInteractionsFromString } from "../capture/interactions.js";
 import { discoverRoutes } from "../capture/discover.js";
+import { appendRun, detectRegressions, loadHistory, recordFromReport, saveHistory } from "../eval/history.js";
+import { buildAddenda, loadAddendaLines, saveAddenda } from "../eval/evolve.js";
 import { summarize } from "./output.js";
 import type { OutputFormat, IssueSeverity } from "../types.js";
 
@@ -74,6 +76,9 @@ export function buildProgram(): Command {
     .option("--mosaic", "Stack all viewports of a fixture into one image per call (better for L3 viewport-conditional faults).", false)
     .option("--with-dom", "Send authoritative DOM measurements (sizes, overflow, contrast estimate) alongside the screenshot.", false)
     .option("--consistency <n>", "Self-consistency samples per fixture (1=off, 3=recommended).", "1")
+    .option("--history <path>", "Provider scorecard history file (append + regression check).", ".motionlint/eval-history.json")
+    .option("--no-history", "Skip recording this run in the scorecard history.")
+    .option("--evolve", "Distill next_actions into .motionlint/prompt-addenda.md — review prompts pick it up automatically.", false)
     .option("--ci", "Exit non-zero when the eval is failing on any attempted level.", false)
     .option("--quiet", "Suppress per-fixture progress output.", false)
     .action(async (opts: EvalCliOptions) => {
@@ -377,6 +382,8 @@ interface EvalCliOptions {
   mosaic?: boolean;
   withDom?: boolean;
   consistency?: string;
+  history?: string | false;
+  evolve?: boolean;
   ci?: boolean;
   quiet?: boolean;
 }
@@ -441,6 +448,35 @@ async function runEvalCommand(opts: EvalCliOptions): Promise<void> {
     await mkdir(dirname(opts.json), { recursive: true });
     await writeFile(opts.json, JSON.stringify(report, null, 2), "utf8");
     console.error(kleur.green(`  json      → ${opts.json}`));
+  }
+
+  // Scorecard history: compare against the previous run of this provider+model,
+  // then append. Regressions are called out but never change the exit code —
+  // the thresholds in truth.json stay the only gate.
+  if (opts.history !== false) {
+    const historyPath = typeof opts.history === "string" ? opts.history : ".motionlint/eval-history.json";
+    const history = await loadHistory(historyPath);
+    const record = recordFromReport(report);
+    const regressions = detectRegressions(history, record);
+    await saveHistory(historyPath, appendRun(history, record));
+    console.error(kleur.gray(`  history   → ${historyPath} (${history.runs.length + 1} runs)`));
+    if (regressions.length > 0) {
+      console.error(kleur.red(`  ⚠ regressions vs previous ${report.provider} (${report.model}) run:`));
+      for (const r of regressions) console.error(kleur.red(`    - ${r}`));
+    }
+  }
+
+  // Prompt evolution: fold this run's misses into the learned-heuristics file.
+  if (opts.evolve) {
+    const addendaPath = ".motionlint/prompt-addenda.md";
+    const existing = await loadAddendaLines(addendaPath);
+    const lines = buildAddenda(report.next_actions, existing);
+    if (lines.length > 0) {
+      await saveAddenda(addendaPath, lines);
+      console.error(kleur.green(`  heuristics → ${addendaPath} (${lines.length} lines; review prompts include them automatically)`));
+    } else {
+      console.error(kleur.gray(`  heuristics: nothing to distill — no next_actions this run`));
+    }
   }
 
   console.error("");
