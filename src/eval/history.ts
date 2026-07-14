@@ -30,14 +30,25 @@ export function emptyHistory(): EvalHistory {
 }
 
 export async function loadHistory(path: string): Promise<EvalHistory> {
+  let text: string;
   try {
-    const parsed = JSON.parse(await readFile(path, "utf8")) as EvalHistory;
-    if (parsed?.version !== 1 || !Array.isArray(parsed.runs)) return emptyHistory();
-    return parsed;
+    text = await readFile(path, "utf8");
   } catch (err) {
     if ((err as NodeJS.ErrnoException).code === "ENOENT") return emptyHistory();
-    return emptyHistory();
+    throw err;
   }
+  // Corruption is loud, never silently reset — a reset would overwrite the
+  // audit trail on the next save (same convention as the memory store).
+  let parsed: EvalHistory;
+  try {
+    parsed = JSON.parse(text) as EvalHistory;
+  } catch {
+    throw new Error(`Eval history ${path} is corrupt (invalid JSON). Delete it to start fresh.`);
+  }
+  if (parsed?.version !== 1 || !Array.isArray(parsed.runs)) {
+    throw new Error(`Eval history ${path} has an unexpected shape. Delete it to start fresh.`);
+  }
+  return parsed;
 }
 
 export async function saveHistory(path: string, history: EvalHistory): Promise<void> {
@@ -63,7 +74,9 @@ export function recordFromReport(report: EvalReport): EvalRunRecord {
     provider: report.provider,
     model: report.model,
     levels,
-    aggregate_recall: expected > 0 ? Math.round((detected / expected) * 1000) / 1000 : 0,
+    // Same convention as per-level recall: a run with nothing expected
+    // (controls only) that produced no misses is perfect, not zero.
+    aggregate_recall: expected > 0 ? Math.round((detected / expected) * 1000) / 1000 : 1,
     overall_passing: report.overall_passing,
     next_actions: report.next_actions.length,
   };

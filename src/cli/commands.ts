@@ -7,6 +7,7 @@ import { parseInteractionsFromString } from "../capture/interactions.js";
 import { discoverRoutes } from "../capture/discover.js";
 import { appendRun, detectRegressions, loadHistory, recordFromReport, saveHistory } from "../eval/history.js";
 import { buildAddenda, loadAddendaLines, saveAddenda } from "../eval/evolve.js";
+import { withMemoryLock } from "../memory/lock.js";
 import { summarize } from "./output.js";
 import type { OutputFormat, IssueSeverity } from "../types.js";
 
@@ -451,31 +452,44 @@ async function runEvalCommand(opts: EvalCliOptions): Promise<void> {
   }
 
   // Scorecard history: compare against the previous run of this provider+model,
-  // then append. Regressions are called out but never change the exit code —
-  // the thresholds in truth.json stay the only gate.
+  // then append under the shared file lock (parallel provider benchmarks are a
+  // real workflow — last-writer-wins would silently drop runs). Regressions are
+  // called out but never change the exit code — truth.json stays the only gate.
   if (opts.history !== false) {
     const historyPath = typeof opts.history === "string" ? opts.history : ".motionlint/eval-history.json";
-    const history = await loadHistory(historyPath);
-    const record = recordFromReport(report);
-    const regressions = detectRegressions(history, record);
-    await saveHistory(historyPath, appendRun(history, record));
-    console.error(kleur.gray(`  history   → ${historyPath} (${history.runs.length + 1} runs)`));
-    if (regressions.length > 0) {
-      console.error(kleur.red(`  ⚠ regressions vs previous ${report.provider} (${report.model}) run:`));
-      for (const r of regressions) console.error(kleur.red(`    - ${r}`));
+    try {
+      await withMemoryLock(historyPath, async () => {
+        const history = await loadHistory(historyPath);
+        const record = recordFromReport(report);
+        const regressions = detectRegressions(history, record);
+        await saveHistory(historyPath, appendRun(history, record));
+        console.error(kleur.gray(`  history   → ${historyPath} (${history.runs.length + 1} runs)`));
+        if (regressions.length > 0) {
+          console.error(kleur.red(`  ⚠ regressions vs previous ${report.provider} (${report.model}) run:`));
+          for (const r of regressions) console.error(kleur.red(`    - ${r}`));
+        }
+      });
+    } catch (err) {
+      console.error(kleur.yellow(`  history: ${(err as Error).message} — run not recorded.`));
     }
   }
 
-  // Prompt evolution: fold this run's misses into the learned-heuristics file.
+  // Prompt evolution: fold this run's misses into the learned-heuristics file —
+  // the same file the review pipeline reads (config.learnedHeuristics).
   if (opts.evolve) {
-    const addendaPath = ".motionlint/prompt-addenda.md";
-    const existing = await loadAddendaLines(addendaPath);
-    const lines = buildAddenda(report.next_actions, existing);
-    if (lines.length > 0) {
-      await saveAddenda(addendaPath, lines);
-      console.error(kleur.green(`  heuristics → ${addendaPath} (${lines.length} lines; review prompts include them automatically)`));
+    const config = await loadConfig();
+    const addendaPath = config.learnedHeuristics;
+    if (!addendaPath) {
+      console.error(kleur.yellow("  heuristics: learnedHeuristics is disabled (null) in config — skipping --evolve."));
     } else {
-      console.error(kleur.gray(`  heuristics: nothing to distill — no next_actions this run`));
+      const existing = await loadAddendaLines(addendaPath);
+      const lines = buildAddenda(report.next_actions, existing);
+      if (lines.length > 0) {
+        await saveAddenda(addendaPath, lines);
+        console.error(kleur.green(`  heuristics → ${addendaPath} (${lines.length} lines; review prompts include them automatically)`));
+      } else {
+        console.error(kleur.gray(`  heuristics: nothing to distill — no next_actions this run`));
+      }
     }
   }
 

@@ -84,6 +84,25 @@ describe("eval history", () => {
     }
   });
 
+  it("treats a controls-only run as perfect recall, and rejects corrupt files loudly", async () => {
+    const report = {
+      generated_at: "now", provider: "mock", model: "m",
+      levels: [{ level: "L1", recall: 1, control_violations: 0, passing: true, total_expected: 0, total_detected: 0 }],
+      overall_passing: true, next_actions: [],
+    } as unknown as EvalReport;
+    assert.equal(recordFromReport(report).aggregate_recall, 1);
+
+    const dir = await mkdtemp(join(tmpdir(), "ml-hist-corrupt-"));
+    try {
+      const path = join(dir, "history.json");
+      const { writeFile } = await import("node:fs/promises");
+      await writeFile(path, "{not json", "utf8");
+      await assert.rejects(() => loadHistory(path), /corrupt/);
+    } finally {
+      await rm(dir, { recursive: true, force: true });
+    }
+  });
+
   it("builds a record from an eval report", () => {
     const report = {
       generated_at: "now",
@@ -118,7 +137,9 @@ describe("prompt evolution", () => {
     const line = actionLine(action);
     assert.match(line, /Watch for loading_state \(critical\)/);
     const merged = buildAddenda([action], [line, "- Watch for contrast (warning): old one [L1/hero · contrast]"]);
-    assert.equal(merged.length, 2, "same fixture/category dedupes");
+    assert.equal(merged.length, 2, "identical lines dedupe");
+    const twoMisses = buildAddenda([action, { ...action, description: "Missed the cancel escape hatch." }], []);
+    assert.equal(twoMisses.length, 2, "distinct misses on the same fixture+category both survive");
     const many = buildAddenda(
       Array.from({ length: 20 }, (_, i) => ({ ...action, fixture: `f${i}` })),
       [],
