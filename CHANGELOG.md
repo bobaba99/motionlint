@@ -4,6 +4,8 @@ All notable changes to MotionLint will be documented here. Format follows [Keep 
 
 ## [Unreleased]
 
+## [0.2.0] — 2026-07-14
+
 ### Added
 
 - **Provider scorecard history** — every `eval` run appends a compact record (per-level recall/violations/pass, aggregate recall) to `.motionlint/eval-history.json` (capped at 100) and compares against the previous run of the same provider+model: recall drops >10 points and newly-failing levels are called out as regressions in the terminal. `--history <path>` / `--no-history`. Regressions never change the exit code — truth.json thresholds stay the only gate.

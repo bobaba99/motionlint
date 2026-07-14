@@ -1,6 +1,6 @@
 {
   "name": "motionlint",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "AI design review in your terminal — automated visual UI/UX analysis using vision LLMs.",
   "keywords": [
     "ux",
