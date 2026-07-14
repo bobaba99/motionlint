@@ -1,0 +1,311 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MotionLint Animation Audit</title>
+<style>
+:root {
+  color-scheme: light dark;
+  /* Emil's strong easing curves as shared tokens (the linter recommends these verbatim). */
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
+  --dur-fast: 140ms;
+  --dur: 220ms;
+  --dur-slow: 280ms;
+
+  --bg: #f6f7f9;
+  --bg-elev: #ffffff;
+  --bg-sunken: #eef0f3;
+  --border: #e2e5ea;
+  --border-strong: #cfd4dc;
+  --text: #14161c;
+  --text-dim: #5b6472;
+  --text-faint: #8a93a3;
+  --accent: #5b63f5;
+  --accent-soft: rgba(91, 99, 245, 0.1);
+  --critical: #e5484d;
+  --critical-soft: rgba(229, 72, 77, 0.12);
+  --warning: #f2a20c;
+  --warning-soft: rgba(242, 162, 12, 0.14);
+  --suggestion: #6b7280;
+  --suggestion-soft: rgba(107, 114, 128, 0.12);
+  --good: #30a46c;
+  --good-soft: rgba(48, 164, 108, 0.14);
+  --shadow: 0 1px 2px rgba(20, 22, 28, 0.04), 0 8px 24px -12px rgba(20, 22, 28, 0.18);
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0b0d12;
+    --bg-elev: #14171f;
+    --bg-sunken: #0f1218;
+    --border: #232833;
+    --border-strong: #313846;
+    --text: #e8ebf1;
+    --text-dim: #9aa3b3;
+    --text-faint: #6b7488;
+    --accent: #7c84ff;
+    --accent-soft: rgba(124, 132, 255, 0.16);
+    --critical: #ff6169;
+    --critical-soft: rgba(255, 97, 105, 0.16);
+    --warning: #ffb84d;
+    --warning-soft: rgba(255, 184, 77, 0.16);
+    --suggestion: #9aa3b3;
+    --suggestion-soft: rgba(154, 163, 179, 0.14);
+    --good: #45c98a;
+    --good-soft: rgba(69, 201, 138, 0.16);
+    --shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 12px 32px -16px rgba(0, 0, 0, 0.6);
+  }
+}
+
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font: 15px/1.6 ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+.wrap { max-width: 960px; margin: 0 auto; padding: 40px 24px 96px; }
+a { color: var(--accent); text-decoration: none; }
+a:hover { text-decoration: underline; }
+code, .mono { font-family: ui-monospace, "SF Mono", SFMono-Regular, Menlo, monospace; font-size: 0.86em; }
+code {
+  background: var(--bg-sunken); border: 1px solid var(--border);
+  padding: 1px 6px; border-radius: 6px; white-space: nowrap;
+}
+
+/* — Header — */
+.masthead { display: flex; align-items: flex-start; gap: 16px; flex-wrap: wrap; margin-bottom: 8px; }
+.logo {
+  width: 40px; height: 40px; border-radius: 11px; flex: none;
+  background: linear-gradient(135deg, var(--accent), #a78bfa);
+  display: grid; place-items: center; box-shadow: var(--shadow);
+}
+.logo svg { width: 22px; height: 22px; }
+.masthead h1 { margin: 0; font-size: 22px; letter-spacing: -0.02em; }
+.masthead .sub { margin: 2px 0 0; color: var(--text-dim); font-size: 13.5px; }
+.masthead .sub .mono { color: var(--text-faint); }
+
+/* — Score ring / summary band — */
+.summary {
+  display: flex; align-items: center; gap: 24px; flex-wrap: wrap;
+  background: var(--bg-elev); border: 1px solid var(--border);
+  border-radius: 16px; padding: 22px 24px; margin: 24px 0 32px;
+  box-shadow: var(--shadow);
+}
+.ring { --v: 0; width: 76px; height: 76px; flex: none; position: relative; }
+.ring svg { transform: rotate(-90deg); }
+.ring .track { stroke: var(--bg-sunken); }
+.ring .val { stroke: var(--ring-color, var(--good)); stroke-linecap: round; transition: stroke-dashoffset 700ms var(--ease-out); }
+.ring .num { position: absolute; inset: 0; display: grid; place-items: center; font-weight: 700; font-size: 19px; letter-spacing: -0.02em; }
+.summary .headline { flex: 1 1 220px; }
+.summary .headline h2 { margin: 0 0 4px; font-size: 16px; font-weight: 650; letter-spacing: -0.01em; }
+.summary .headline p { margin: 0; color: var(--text-dim); font-size: 13.5px; }
+.tallies { display: flex; gap: 8px; flex-wrap: wrap; }
+.pill {
+  display: inline-flex; align-items: center; gap: 6px;
+  font-size: 12.5px; font-weight: 600; padding: 5px 11px; border-radius: 999px;
+  border: 1px solid var(--border);
+}
+.pill .dot { width: 7px; height: 7px; border-radius: 50%; }
+.pill.crit { background: var(--critical-soft); color: var(--critical); border-color: transparent; }
+.pill.crit .dot { background: var(--critical); }
+.pill.warn { background: var(--warning-soft); color: var(--warning); border-color: transparent; }
+.pill.warn .dot { background: var(--warning); }
+.pill.sug { background: var(--suggestion-soft); color: var(--suggestion); border-color: transparent; }
+.pill.sug .dot { background: var(--suggestion); }
+.pill.good { background: var(--good-soft); color: var(--good); border-color: transparent; }
+.pill.good .dot { background: var(--good); }
+
+/* — Section headers — */
+.section-h { display: flex; align-items: baseline; gap: 10px; margin: 40px 0 16px; }
+.section-h h2 { margin: 0; font-size: 15px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-dim); font-weight: 650; }
+.section-h .count { color: var(--text-faint); font-size: 13px; }
+
+/* — Finding cards — */
+.finding {
+  background: var(--bg-elev); border: 1px solid var(--border);
+  border-left: 3px solid var(--sev-color, var(--suggestion));
+  border-radius: 14px; padding: 18px 20px; margin-bottom: 14px;
+  box-shadow: var(--shadow);
+  opacity: 0; transform: translateY(10px) scale(0.99);
+  animation: rise var(--dur-slow) var(--ease-out) forwards;
+}
+.finding.sev-critical { --sev-color: var(--critical); }
+.finding.sev-warning { --sev-color: var(--warning); }
+.finding.sev-suggestion { --sev-color: var(--suggestion); }
+@keyframes rise { to { opacity: 1; transform: none; } }
+.finding .top { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 8px; }
+.badge {
+  font-size: 11px; font-weight: 700; letter-spacing: 0.03em; text-transform: uppercase;
+  padding: 3px 8px; border-radius: 6px; background: var(--sev-color); color: #fff;
+}
+.finding.sev-warning .badge { color: #1a1204; }
+.tag { font-size: 12px; font-weight: 600; color: var(--text-dim); background: var(--bg-sunken); border: 1px solid var(--border); padding: 2px 9px; border-radius: 999px; }
+.finding h3 { margin: 0; font-size: 16px; letter-spacing: -0.01em; flex: 1 1 auto; min-width: 200px; }
+.finding .loc { color: var(--text-faint); font-size: 12.5px; margin: 0 0 12px; }
+.finding .field { margin: 8px 0; font-size: 14px; }
+.finding .field .lbl { color: var(--text-faint); font-weight: 600; font-size: 11.5px; text-transform: uppercase; letter-spacing: 0.04em; display: block; margin-bottom: 1px; }
+.finding .std { margin-top: 12px; padding: 9px 12px; background: var(--accent-soft); border-radius: 9px; font-size: 12.5px; color: var(--text-dim); }
+.finding .std b { color: var(--accent); font-weight: 650; }
+
+/* — Before/after — */
+.ba { display: grid; grid-template-columns: 1fr auto 1fr; gap: 12px; align-items: stretch; margin: 12px 0 4px; }
+@media (max-width: 560px) { .ba { grid-template-columns: 1fr; } .ba .arrow { transform: rotate(90deg); } }
+.ba .cell { background: var(--bg-sunken); border: 1px solid var(--border); border-radius: 10px; padding: 10px 12px; }
+.ba .cell.after { border-color: var(--good); background: var(--good-soft); }
+.ba .cell .cap { font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.05em; font-weight: 700; color: var(--text-faint); margin-bottom: 5px; }
+.ba .cell.after .cap { color: var(--good); }
+.ba .cell .v { font-family: ui-monospace, "SF Mono", Menlo, monospace; font-size: 13px; word-break: break-word; }
+.ba .arrow { align-self: center; color: var(--text-faint); font-size: 18px; }
+
+/* — Screenshot — */
+.shot { margin: 8px 0 20px; border-radius: 12px; overflow: hidden; border: 1px solid var(--border); box-shadow: var(--shadow); }
+.shot img { display: block; width: 100%; height: auto; }
+
+/* — Footer — */
+.foot { margin-top: 48px; padding-top: 20px; border-top: 1px solid var(--border); color: var(--text-faint); font-size: 12.5px; text-align: center; }
+.empty { text-align: center; color: var(--text-dim); padding: 48px 24px; background: var(--bg-elev); border: 1px dashed var(--border-strong); border-radius: 14px; }
+.empty .big { font-size: 32px; margin-bottom: 8px; }
+
+@media (prefers-reduced-motion: reduce) {
+  .finding { animation: fade var(--dur) ease forwards; transform: none; }
+  .ring .val { transition: none; }
+  @keyframes fade { to { opacity: 1; } }
+}
+
+.ba .curve { display: grid; place-items: center; margin: 4px 0 6px; }
+.ba .curve svg { border-radius: 8px; background: var(--bg-elev); }
+.ba .cell { text-align: center; }
+.ba .cell .v { text-align: center; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="masthead">
+    <div class="logo"><svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M4 17c3-9 4.5-9 7.5 0S16 26 20 7" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+    <div>
+      <h1>MotionLint Animation Audit</h1>
+      <p class="sub"><span class="mono">http://localhost:4173/loading</span> · 1280×800 · 2026-07-13T23:56:35.196Z</p>
+    </div>
+  </div>
+  
+  <div class="summary">
+    
+  <div class="ring" style="--ring-color:var(--warning)">
+    <svg width="76" height="76" viewBox="0 0 76 76">
+      <circle class="track" cx="38" cy="38" r="32" fill="none" stroke-width="7"/>
+      <circle class="val" cx="38" cy="38" r="32" fill="none" stroke-width="7"
+        stroke-dasharray="201.1" stroke-dashoffset="72.4"/>
+    </svg>
+    <div class="num">64</div>
+  </div>
+    <div class="headline">
+      <h2>A few motion issues</h2>
+      <p>No blockers, but some animations drift from the standards. · 7 animations measured</p>
+    </div>
+    <div class="tallies"><span class="pill warn"><span class="dot"></span>3 warning</span><span class="pill sug"><span class="dot"></span>2 suggestion</span></div>
+  </div>
+    <div class="section-h"><h2>Findings</h2><span class="count">5 total</span></div>
+    
+  <article class="finding sev-warning" style="animation-delay:0ms">
+    <div class="top">
+      <span class="badge">warning</span>
+      <span class="tag">Duration</span>
+      <h3>Duration 1400ms exceeds the UI budget</h3>
+    </div>
+    <p class="loc">🎯 Skeletons that don’t feel skeletal. / div · <code>html &gt; body &gt; main.container &gt; div.features:nth-of-type(2) &gt; div.feature:nth-of-type(1) &gt; div.skeleton.sk-line:nth-of-type(1)</code></p>
+    <div class="field"><span class="lbl">What's happening</span>1400ms is over the 300ms ceiling for UI motion.</div>
+    <div class="field"><span class="lbl">Why it matters</span>Longer animations make the interface feel sluggish; a 180ms transition feels snappier than a 400ms one.</div>
+    <div class="field"><span class="lbl">Fix</span>Reduce to ≤ 300ms (150–250ms is the sweet spot for most UI).</div>
+    
+    <div class="ba">
+      <div class="cell"><div class="cap">Current</div><div class="v">1400ms</div></div>
+      <div class="arrow">→</div>
+      <div class="cell after"><div class="cap">Suggested</div><div class="v">≤ 300ms</div></div>
+    </div>
+    <div class="std"><b>Standard</b> — UI animations stay under 300ms (modals/drawers: 200–500ms).</div>
+  </article>
+
+  <article class="finding sev-warning" style="animation-delay:40ms">
+    <div class="top">
+      <span class="badge">warning</span>
+      <span class="tag">Duration</span>
+      <h3>Duration 1400ms exceeds the UI budget</h3>
+    </div>
+    <p class="loc">🎯 Inbox skeleton / div · <code>body &gt; main.container &gt; section.section &gt; div.sk-card:nth-of-type(2) &gt; div:nth-of-type(1) &gt; div.skeleton.sk-avatar:nth-of-type(1)</code></p>
+    <div class="field"><span class="lbl">What's happening</span>1400ms is over the 300ms ceiling for UI motion.</div>
+    <div class="field"><span class="lbl">Why it matters</span>Longer animations make the interface feel sluggish; a 180ms transition feels snappier than a 400ms one.</div>
+    <div class="field"><span class="lbl">Fix</span>Reduce to ≤ 300ms (150–250ms is the sweet spot for most UI).</div>
+    
+    <div class="ba">
+      <div class="cell"><div class="cap">Current</div><div class="v">1400ms</div></div>
+      <div class="arrow">→</div>
+      <div class="cell after"><div class="cap">Suggested</div><div class="v">≤ 300ms</div></div>
+    </div>
+    <div class="std"><b>Standard</b> — UI animations stay under 300ms (modals/drawers: 200–500ms).</div>
+  </article>
+
+  <article class="finding sev-warning" style="animation-delay:80ms">
+    <div class="top">
+      <span class="badge">warning</span>
+      <span class="tag">Accessibility</span>
+      <h3>No prefers-reduced-motion path</h3>
+    </div>
+    <p class="loc">🎯 Page stylesheet · <code>(project-wide)</code></p>
+    <div class="field"><span class="lbl">What's happening</span>The page animates movement (transform / keyframes) but ships no `@media (prefers-reduced-motion: reduce)` rule.</div>
+    <div class="field"><span class="lbl">Why it matters</span>Motion-sensitive users get no relief; large movement can trigger nausea or vestibular symptoms.</div>
+    <div class="field"><span class="lbl">Fix</span>Add `@media (prefers-reduced-motion: reduce)` that drops transform-based motion while keeping opacity/colour transitions.</div>
+    
+    <div class="ba">
+      <div class="cell"><div class="cap">Current</div><div class="v">(no reduced-motion rule)</div></div>
+      <div class="arrow">→</div>
+      <div class="cell after"><div class="cap">Suggested</div><div class="v">@media (prefers-reduced-motion: reduce) { … }</div></div>
+    </div>
+    <div class="std"><b>Standard</b> — Honour prefers-reduced-motion — gentler, not zero.</div>
+  </article>
+
+  <article class="finding sev-suggestion" style="animation-delay:120ms">
+    <div class="top">
+      <span class="badge">suggestion</span>
+      <span class="tag">Easing</span>
+      <h3>Weak built-in easing on an entrance</h3>
+    </div>
+    <p class="loc">🎯 Inbox skeleton / div · <code>body &gt; main.container &gt; section.section &gt; div.sk-card:nth-of-type(2) &gt; div:nth-of-type(1) &gt; div.skeleton.sk-avatar:nth-of-type(1)</code></p>
+    <div class="field"><span class="lbl">What's happening</span>`linear` is too soft for a deliberate entrance. Built-in CSS easings barely accelerate.</div>
+    <div class="field"><span class="lbl">Why it matters</span>A stronger curve reads as intentional and responsive rather than generic.</div>
+    <div class="field"><span class="lbl">Fix</span>Use a strong ease-out token: `cubic-bezier(0.23, 1, 0.32, 1)`.</div>
+    
+    <div class="ba">
+      <div class="cell"><div class="cap">Current</div><div class="curve"><svg width="96" height="96" viewBox="0 0 96 96"><rect x="8" y="8" width="80" height="80" fill="none" stroke="var(--border)" stroke-width="1"/><path d="M 8 88 C 8 88, 88 8, 88 8" fill="none" stroke="var(--critical)" stroke-width="2.5" stroke-linecap="round"/></svg></div><div class="v">linear</div></div>
+      <div class="arrow">→</div>
+      <div class="cell after"><div class="cap">Suggested</div><div class="curve"><svg width="96" height="96" viewBox="0 0 96 96"><rect x="8" y="8" width="80" height="80" fill="none" stroke="var(--border)" stroke-width="1"/><path d="M 8 88 C 26.400000000000002 8, 33.6 8, 88 8" fill="none" stroke="var(--good)" stroke-width="2.5" stroke-linecap="round"/></svg></div><div class="v">cubic-bezier(0.23, 1, 0.32, 1)</div></div>
+    </div>
+    <div class="std"><b>Standard</b> — Built-in CSS easings are too weak — use strong custom curves.</div>
+  </article>
+
+  <article class="finding sev-suggestion" style="animation-delay:160ms">
+    <div class="top">
+      <span class="badge">suggestion</span>
+      <span class="tag">Accessibility</span>
+      <h3>Hover motion isn't gated for touch</h3>
+    </div>
+    <p class="loc">🎯 Hover motion · <code>(project-wide)</code></p>
+    <div class="field"><span class="lbl">What's happening</span>Hover-triggered motion isn't wrapped in `@media (hover: hover) and (pointer: fine)`.</div>
+    <div class="field"><span class="lbl">Why it matters</span>Touch devices fire a synthetic hover on tap, so the animation plays on every touch — a false positive the user never intended.</div>
+    <div class="field"><span class="lbl">Fix</span>Gate hover animations behind `@media (hover: hover) and (pointer: fine)`.</div>
+    
+    <div class="ba">
+      <div class="cell"><div class="cap">Current</div><div class="v">(ungated :hover)</div></div>
+      <div class="arrow">→</div>
+      <div class="cell after"><div class="cap">Suggested</div><div class="v">@media (hover: hover) and (pointer: fine) { … }</div></div>
+    </div>
+    <div class="std"><b>Standard</b> — Gate hover motion behind (hover: hover) and (pointer: fine).</div>
+  </article>
+  <div class="foot">Generated by <a href="https://github.com/bobaba99/motionlint">MotionLint</a> · animation standards after <a href="https://emilkowal.ski/">Emil Kowalski</a></div>
+</div>
+
+</body>
+</html>

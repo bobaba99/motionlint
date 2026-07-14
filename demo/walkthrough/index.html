@@ -1,0 +1,668 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MotionLint — feature walkthrough</title>
+<meta name="description" content="MotionLint: AI design + motion review in your terminal. Four commands, one deterministic motion linter, reports designed like products.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<script>
+  // Apply a saved manual theme before first paint so there is no theme flash.
+  (() => {
+    try {
+      const t = localStorage.getItem("ml-theme");
+      if (t === "light" || t === "dark") document.documentElement.dataset.theme = t;
+    } catch { /* storage unavailable — follow the OS */ }
+  })();
+</script>
+<noscript><style>.reveal { opacity: 1 !important; transform: none !important; }</style></noscript>
+<style>
+  /* ————— tokens ————— */
+  :root {
+    --bg: #f2f3f7;
+    --panel: #ffffff;
+    --panel-2: #e9ebf2;
+    --ink: #171a22;
+    --muted: #5b6170;
+    --line: #dcdfe8;
+    --accent: #4c53e8;
+    --accent-soft: rgba(76, 83, 232, 0.1);
+    --mint: #0e9f6e;
+    --amber: #b97d10;
+    --amber-squig: #e8a30c;
+    --coral: #cf3448;
+    --chrome: #e3e5ec;
+    --shadow: 0 1px 2px rgba(23, 26, 34, 0.06), 0 12px 32px rgba(23, 26, 34, 0.08);
+
+    /* the only two easing curves on this page — shared tokens, per the standard */
+    --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+    --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
+    --t-fast: 120ms;
+    --t-ui: 180ms;
+    --t-reveal: 260ms;
+
+    --font-display: "Space Grotesk", system-ui, -apple-system, "Segoe UI", sans-serif;
+    --font-body: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+  }
+  [data-theme="dark"] {
+    --bg: #0d0f14;
+    --panel: #151821;
+    --panel-2: #1b1f2c;
+    --ink: #e7e9f0;
+    --muted: #8a90a3;
+    --line: #262b3a;
+    --accent: #7c86ff;
+    --accent-soft: rgba(124, 134, 255, 0.12);
+    --mint: #34d399;
+    --amber: #f0b429;
+    --amber-squig: #f0b429;
+    --coral: #f26d78;
+    --chrome: #1b1f2c;
+    --shadow: 0 1px 2px rgba(0, 0, 0, 0.4), 0 16px 40px rgba(0, 0, 0, 0.45);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #0d0f14;
+      --panel: #151821;
+      --panel-2: #1b1f2c;
+      --ink: #e7e9f0;
+      --muted: #8a90a3;
+      --line: #262b3a;
+      --accent: #7c86ff;
+      --accent-soft: rgba(124, 134, 255, 0.12);
+      --mint: #34d399;
+      --amber: #f0b429;
+      --amber-squig: #f0b429;
+      --coral: #f26d78;
+      --chrome: #1b1f2c;
+      --shadow: 0 1px 2px rgba(0, 0, 0, 0.4), 0 16px 40px rgba(0, 0, 0, 0.45);
+    }
+  }
+
+  /* ————— base ————— */
+  * { margin: 0; box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    background: var(--bg);
+    color: var(--ink);
+    font: 16px/1.6 var(--font-body);
+    -webkit-font-smoothing: antialiased;
+  }
+  ::selection { background: var(--accent-soft); }
+  a { color: var(--accent); text-decoration: none; }
+  code, pre, kbd { font-family: var(--font-mono); }
+  h1, h2, h3 { font-family: var(--font-display); letter-spacing: -0.02em; line-height: 1.1; }
+  .wrap { max-width: 1060px; margin: 0 auto; padding: 0 24px; }
+
+  /* the signature: a lint squiggle, reused wherever something is "flagged" */
+  .squig { position: relative; }
+  .squig::after {
+    content: "";
+    position: absolute; left: 2%; right: 2%; bottom: -0.08em; height: 0.14em;
+    background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 8' preserveAspectRatio='none'%3E%3Cpath d='M0 4 Q 3 0, 6 4 T 12 4 T 18 4 T 24 4' fill='none' stroke='%23e8a30c' stroke-width='2.4'/%3E%3C/svg%3E") repeat-x;
+    background-size: 0.55em 0.18em;
+  }
+  [data-theme="dark"] .squig::after { filter: brightness(1.12); }
+
+  /* ————— header ————— */
+  .top {
+    position: sticky; top: 0; z-index: 30;
+    background: color-mix(in srgb, var(--bg) 94%, transparent);
+    backdrop-filter: blur(10px);
+    border-bottom: 1px solid var(--line);
+  }
+  .top-inner { display: flex; align-items: center; gap: 20px; padding: 14px 24px; max-width: 1060px; margin: 0 auto; }
+  .brand { font-family: var(--font-mono); font-weight: 600; font-size: 15px; color: var(--ink); }
+  .brand .tilde { color: var(--accent); }
+  .top nav { display: flex; gap: 4px; margin-left: auto; flex-wrap: wrap; }
+  .top nav a {
+    color: var(--muted); font-size: 13.5px; padding: 6px 10px; border-radius: 8px;
+    transition: color var(--t-ui) var(--ease-in-out), background-color var(--t-ui) var(--ease-in-out);
+  }
+  .btn {
+    appearance: none; border: 1px solid var(--line); background: var(--panel); color: var(--ink);
+    border-radius: 9px; padding: 7px 12px; font: 600 13px var(--font-mono); cursor: pointer;
+    transition: transform var(--t-fast) var(--ease-out), background-color var(--t-ui) var(--ease-in-out), border-color var(--t-ui) var(--ease-in-out);
+  }
+  .btn:active { transform: scale(0.97); }
+  .btn:focus-visible, a:focus-visible, video:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+  /* ————— hero ————— */
+  .hero { padding: 96px 24px 40px; }
+  .eyebrow { font: 600 13px var(--font-mono); color: var(--accent); letter-spacing: 0.04em; text-transform: none; }
+  .hero h1 {
+    font-size: clamp(40px, 6.4vw, 72px); font-weight: 700; margin: 18px 0 12px; max-width: 860px;
+  }
+  .hero .sub { font-size: 19px; color: var(--muted); max-width: 680px; margin-top: 16px; }
+  .diag {
+    display: inline-flex; align-items: baseline; gap: 10px; flex-wrap: wrap;
+    margin-top: 26px; padding: 10px 14px;
+    background: var(--panel); border: 1px solid var(--line); border-left: 3px solid var(--amber-squig);
+    border-radius: 10px; box-shadow: var(--shadow);
+    font: 400 13.5px var(--font-mono); color: var(--muted);
+  }
+  .diag .sev { color: var(--amber); font-weight: 600; }
+  .diag .rule { color: var(--muted); opacity: 0.8; }
+  .diag code { color: var(--ink); }
+  .cmd-strip { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 34px; }
+  .cmd-strip a {
+    font: 600 14px var(--font-mono); color: var(--ink);
+    background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 9px 14px;
+    transition: transform var(--t-fast) var(--ease-out), border-color var(--t-ui) var(--ease-in-out), background-color var(--t-ui) var(--ease-in-out);
+  }
+  .cmd-strip a:active { transform: scale(0.97); }
+  .cmd-strip .dollar { color: var(--accent); margin-right: 7px; }
+
+  /* ————— sections ————— */
+  section { padding: 56px 0; }
+  .kicker { font: 600 13px var(--font-mono); color: var(--accent); margin-bottom: 12px; }
+  section h2 { font-size: clamp(28px, 4vw, 40px); font-weight: 700; margin-bottom: 12px; }
+  .lede { color: var(--muted); max-width: 640px; font-size: 17px; }
+
+  /* media chrome around every clip */
+  .clip-frame {
+    margin-top: 32px; border-radius: 14px; overflow: hidden;
+    border: 1px solid var(--line); background: var(--panel); box-shadow: var(--shadow);
+    transition: transform var(--t-ui) var(--ease-out), box-shadow var(--t-ui) var(--ease-out);
+  }
+  .chrome-bar {
+    display: flex; align-items: center; gap: 8px; padding: 10px 14px;
+    background: var(--chrome); border-bottom: 1px solid var(--line);
+  }
+  .dot { width: 11px; height: 11px; border-radius: 50%; background: var(--line); }
+  .dot.r { background: #f26d78; } .dot.y { background: #f0b429; } .dot.g { background: #34d399; }
+  .chrome-title { font: 400 12.5px var(--font-mono); color: var(--muted); margin-left: 8px; }
+  .clip-frame video, .clip-frame img.sheet { display: block; width: 100%; height: auto; }
+  .clip-cap { font: 400 13px var(--font-mono); color: var(--muted); padding: 10px 14px; border-top: 1px solid var(--line); }
+  .sheet-scroll { max-height: 560px; overflow-y: auto; overscroll-behavior: contain; }
+
+  .duo { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+  @media (max-width: 900px) { .duo { grid-template-columns: 1fr; } }
+  .duo .clip-frame { margin-top: 24px; }
+
+  .cmd-block { padding: 48px 0 8px; border-top: 1px solid var(--line); margin-top: 48px; }
+  .cmd-block:first-of-type { border-top: 0; margin-top: 0; padding-top: 8px; }
+  .cmd-tag {
+    display: inline-block; font: 600 14px var(--font-mono); color: var(--ink);
+    background: var(--accent-soft); border: 1px solid var(--line); border-radius: 8px;
+    padding: 5px 11px; margin-bottom: 16px;
+  }
+  .cmd-tag .dollar { color: var(--accent); margin-right: 7px; }
+  .cmd-block h3 { font-size: 26px; margin-bottom: 10px; }
+  .cmd-block p { color: var(--muted); max-width: 660px; }
+  .cmd-block p code, .a11y-card p code, .lede code {
+    background: var(--panel-2); border-radius: 5px; padding: 1.5px 5px; font-size: 0.86em; color: var(--ink);
+  }
+
+  /* ————— the standard: six categories ————— */
+  .scorestrip {
+    display: flex; align-items: center; gap: 18px; flex-wrap: wrap;
+    margin-top: 28px; padding: 18px 20px;
+    background: var(--panel); border: 1px solid var(--line); border-radius: 14px; box-shadow: var(--shadow);
+  }
+  .scorestrip .big { font: 700 44px/1 var(--font-display); color: var(--coral); }
+  .scorestrip .desc { color: var(--muted); font-size: 14px; max-width: 520px; }
+  .scorestrip .counts { font: 600 13px var(--font-mono); color: var(--muted); margin-left: auto; }
+  .counts .w { color: var(--amber); } .counts .s { color: var(--accent); }
+
+  .cats { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 18px; margin-top: 26px; }
+  .cat {
+    background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 20px;
+    transition: transform var(--t-ui) var(--ease-out), box-shadow var(--t-ui) var(--ease-out);
+  }
+  .cat .head { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+  .cat .name { font: 600 15px var(--font-display); }
+  .chip {
+    font: 600 10.5px var(--font-mono); letter-spacing: 0.05em; text-transform: uppercase;
+    border-radius: 999px; padding: 3px 9px; margin-left: auto;
+  }
+  .chip.warn { color: var(--amber); background: color-mix(in srgb, var(--amber) 14%, transparent); }
+  .chip.sugg { color: var(--accent); background: var(--accent-soft); }
+  .cat .what { font-size: 14px; color: var(--muted); min-height: 3.4em; }
+  .ba { margin-top: 14px; display: grid; gap: 8px; }
+  .ba .row { display: grid; grid-template-columns: 52px 1fr; gap: 10px; align-items: baseline; }
+  .ba .lab { font: 600 10.5px var(--font-mono); letter-spacing: 0.06em; color: var(--muted); text-transform: uppercase; }
+  .ba code { font-size: 12.5px; word-break: break-all; }
+  .ba .before code { color: var(--coral); }
+  .ba .after code { color: var(--mint); }
+  .cat .cite { margin-top: 14px; padding-top: 12px; border-top: 1px dashed var(--line); font-size: 12.5px; color: var(--muted); }
+  .cat .cite b { color: var(--accent); font-weight: 600; }
+
+  /* ————— reports ————— */
+  .report-frame { margin-top: 32px; }
+  .report-frame iframe {
+    display: block; width: 100%; height: 620px; border: 0; background: #0b0d12;
+  }
+  .open-link { font: 600 13px var(--font-mono); margin-left: auto; }
+
+  /* ————— accessibility ————— */
+  .a11y-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; margin-top: 26px; }
+  @media (max-width: 820px) { .a11y-grid { grid-template-columns: 1fr; } }
+  .a11y-card { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 22px; }
+  .a11y-card h3 { font-size: 19px; margin-bottom: 8px; }
+  .a11y-card p { color: var(--muted); font-size: 14.5px; }
+  .a11y-card pre {
+    margin-top: 14px; padding: 14px; border-radius: 10px; overflow-x: auto;
+    background: var(--panel-2); font-size: 12.5px; line-height: 1.55; color: var(--ink);
+  }
+  .selfnote {
+    margin-top: 22px; padding: 14px 18px; border: 1px solid var(--line); border-left: 3px solid var(--mint);
+    border-radius: 10px; background: var(--panel); color: var(--muted); font-size: 14px; max-width: 760px;
+  }
+  .selfnote b { color: var(--mint); }
+
+  /* ————— footer ————— */
+  footer { border-top: 1px solid var(--line); padding: 56px 0 72px; margin-top: 40px; }
+  footer h2 { font-size: 26px; margin-bottom: 14px; }
+  .runbox { position: relative; margin-top: 18px; }
+  .runbox pre {
+    padding: 20px; border-radius: 14px; overflow-x: auto;
+    background: #14161d; color: #dfe3f0; border: 1px solid var(--line);
+    font-size: 13px; line-height: 1.8;
+  }
+  .runbox pre .c { color: #6b7288; }
+  .runbox .btn { position: absolute; top: 12px; right: 12px; }
+  .runbox .btn { background: #1b1f2c; color: #e7e9f0; border-color: #2c3245; }
+  .foot-meta { margin-top: 26px; color: var(--muted); font-size: 13.5px; }
+
+  /* ————— motion: reveals, hover, reduced-motion ————— */
+  .reveal {
+    opacity: 0;
+    transform: translateY(14px);
+    transition: opacity var(--t-reveal) var(--ease-out), transform var(--t-reveal) var(--ease-out);
+    transition-delay: var(--d, 0ms);
+  }
+  .reveal.in { opacity: 1; transform: translateY(0); }
+
+  @media (hover: hover) and (pointer: fine) {
+    .top nav a:hover { color: var(--ink); background: var(--accent-soft); }
+    .btn:hover, .cmd-strip a:hover { border-color: var(--accent); }
+    .clip-frame:hover { transform: translateY(-2px); box-shadow: var(--shadow); }
+    .cat:hover { transform: translateY(-2px); box-shadow: var(--shadow); }
+  }
+
+  @media (max-width: 760px) {
+    .top nav { display: none; }
+    .hero { padding-top: 64px; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    html { scroll-behavior: auto; }
+    .reveal { transform: none; transition: opacity var(--t-reveal) var(--ease-out); }
+    .clip-frame, .cat, .btn, .cmd-strip a { transition: background-color var(--t-ui) var(--ease-out), border-color var(--t-ui) var(--ease-out), color var(--t-ui) var(--ease-out); }
+    .btn:active, .cmd-strip a:active { transform: none; }
+    .clip-frame:hover, .cat:hover { transform: none; }
+  }
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="top-inner">
+    <span class="brand"><span class="tilde">~</span> motionlint</span>
+    <nav aria-label="Sections">
+      <a href="#subject">demo app</a>
+      <a href="#commands">commands</a>
+      <a href="#standard">the standard</a>
+      <a href="#reports">reports</a>
+      <a href="#a11y">accessibility</a>
+    </nav>
+    <button class="btn" id="theme-toggle" aria-label="Toggle color theme">◐ theme</button>
+  </div>
+</header>
+
+<main>
+  <!-- ————— hero ————— -->
+  <section class="hero wrap">
+    <p class="eyebrow reveal">MotionLint · AI design &amp; motion review in your terminal</p>
+    <h1 class="reveal" style="--d: 40ms">Your UI <span class="squig">moves</span>.<br>MotionLint reviews the&nbsp;motion.</h1>
+    <div class="diag reveal" style="--d: 80ms" role="note" aria-label="Example lint finding">
+      <span class="sev">▲ easing</span>
+      <span><code>ease-in</code> on UI motion — entrances use ease-out</span>
+      <span class="rule">motionlint(easing)</span>
+    </div>
+    <p class="sub reveal" style="--d: 120ms">
+      A CLI that reviews interfaces the way a design engineer would: vision-LLM UX review,
+      frame-by-frame animation review, a live animation tuner — and a fully deterministic
+      linter that grades real computed CSS against
+      <a href="https://emilkowal.ski/">Emil Kowalski</a>'s animation standards.
+    </p>
+    <div class="cmd-strip reveal" style="--d: 160ms">
+      <a href="#cmd-audit"><span class="dollar">$</span>motionlint audit</a>
+      <a href="#cmd-review"><span class="dollar">$</span>motionlint review</a>
+      <a href="#cmd-tune"><span class="dollar">$</span>motionlint tune</a>
+      <a href="#cmd-flow"><span class="dollar">$</span>motionlint flow</a>
+    </div>
+  </section>
+
+  <!-- ————— the test subject ————— -->
+  <section id="subject" class="wrap">
+    <p class="kicker reveal">the test subject</p>
+    <h2 class="reveal">Aurora — a demo app that moves</h2>
+    <p class="lede reveal" style="--d: 40ms">
+      Everything below runs against this five-route demo app (<code>node demo/server.mjs</code>):
+      hero entrances, staggered pricing cards, form micro-interactions, dashboards, and one
+      deliberately sluggish loading screen. Real CSS, GSAP, anime.js and Lottie — a fair fight for a linter.
+    </p>
+    <figure class="clip-frame reveal" style="--d: 80ms">
+      <div class="chrome-bar"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span><span class="chrome-title">localhost:4173 — / · /pricing · /signup · /dashboard · /loading</span></div>
+      <video src="media/demo-app.mp4" poster="media/demo-app-poster.jpg" muted playsinline loop preload="metadata" aria-label="Tour of the Aurora demo app: home, pricing, signup, dashboard and loading routes, each playing its entrance animations"></video>
+      <figcaption class="clip-cap">route tour — every page plays its entrance animations on load</figcaption>
+    </figure>
+  </section>
+
+  <!-- ————— commands ————— -->
+  <section id="commands" class="wrap">
+    <p class="kicker reveal">four commands</p>
+    <h2 class="reveal">The whole review loop, from one binary</h2>
+
+    <article class="cmd-block" id="cmd-audit">
+      <span class="cmd-tag reveal"><span class="dollar">$</span>motionlint audit &lt;url&gt;</span>
+      <h3 class="reveal">Deterministic motion linting — no LLM</h3>
+      <p class="reveal" style="--d: 40ms">
+        <code>audit</code> harvests the page's <em>computed</em> transitions and keyframes with Playwright,
+        then grades them against machine-encoded standards: easing, duration budgets, physicality,
+        performance, cohesion and accessibility. Same input, same findings, every run — it's a linter,
+        so it belongs in CI (<code>--ci</code> exits non-zero on critical findings).
+      </p>
+      <div class="duo">
+        <figure class="clip-frame reveal" style="--d: 60ms">
+          <div class="chrome-bar"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span><span class="chrome-title">terminal — motionlint audit /loading</span></div>
+          <video src="media/cli-audit.mp4" poster="media/cli-audit-poster.jpg" muted playsinline loop preload="metadata" aria-label="Terminal recording: motionlint audit scores the loading route 64 out of 100 and lists five findings"></video>
+          <figcaption class="clip-cap">the sluggish /loading route scores 64/100 — 3 warnings, 2 suggestions</figcaption>
+        </figure>
+        <figure class="clip-frame reveal" style="--d: 120ms">
+          <div class="chrome-bar"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span><span class="chrome-title">audit-report.html</span></div>
+          <video src="media/audit-report.mp4" poster="media/audit-report-poster.jpg" muted playsinline loop preload="metadata" aria-label="The audit HTML report animating in, then scrolling through findings with current versus suggested panels"></video>
+          <figcaption class="clip-cap">the HTML report it writes — every finding shows current → suggested and cites its standard</figcaption>
+        </figure>
+      </div>
+    </article>
+
+    <article class="cmd-block" id="cmd-review">
+      <span class="cmd-tag reveal"><span class="dollar">$</span>motionlint review &lt;url&gt;</span>
+      <h3 class="reveal">Vision-LLM UX review, multi-viewport</h3>
+      <p class="reveal" style="--d: 40ms">
+        <code>review</code> screenshots the page at mobile, tablet and desktop widths and has a vision model
+        grade a 12-dimension UX rubric — hierarchy, spacing, contrast, motion, accessibility and more.
+        Works with Anthropic, OpenAI, Google or local Ollama models; emits Markdown, JSON,
+        SARIF (for PR annotations) or the HTML report below.
+      </p>
+      <figure class="clip-frame reveal" style="--d: 60ms">
+        <div class="chrome-bar"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span><span class="chrome-title">review-report.html</span></div>
+        <video src="media/review-report.mp4" poster="media/review-report-poster.jpg" muted playsinline loop preload="metadata" aria-label="The review HTML report: score ring animates in, then issue and fix panels with annotated screenshots scroll past"></video>
+        <figcaption class="clip-cap">score ring + issue→fix panels with the actual screenshots (this run uses the offline mock provider)</figcaption>
+      </figure>
+    </article>
+
+    <article class="cmd-block" id="cmd-tune">
+      <span class="cmd-tag reveal"><span class="dollar">$</span>motionlint tune &lt;url&gt;</span>
+      <h3 class="reveal">An animation tuner for your real animations</h3>
+      <p class="reveal" style="--d: 40ms">
+        <code>tune</code> detects every animation on a live page and rebuilds each one in an interactive
+        workbench: replay it, drag duration and delay, switch to one of Emil's easing presets, and see
+        inline lint verdicts per animation. When it feels right, export the whole tuning session as a
+        ready-to-paste prompt for Claude Code.
+      </p>
+      <figure class="clip-frame reveal" style="--d: 60ms">
+        <div class="chrome-bar"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span><span class="chrome-title">tuner.html — 15 animations detected · score 87/100</span></div>
+        <video src="media/tuner.mp4" poster="media/tuner-poster.jpg" muted playsinline loop preload="metadata" aria-label="The animation tuner: replaying a login button animation, dragging its duration slider from 300 to 150 milliseconds, applying the Emil ease-out preset"></video>
+        <figcaption class="clip-cap">replay → drag duration 300 → 150ms → apply the ease-out (Emil) preset → replay</figcaption>
+      </figure>
+    </article>
+
+    <article class="cmd-block" id="cmd-flow">
+      <span class="cmd-tag reveal"><span class="dollar">$</span>motionlint flow</span>
+      <h3 class="reveal">Frame-by-frame review of interaction flows</h3>
+      <p class="reveal" style="--d: 40ms">
+        <code>flow</code> scripts a user journey (<code>navigate /signup; type …; click …; capture</code>),
+        burst-captures frames around every interaction, and lays them out on a contact sheet a vision model
+        reviews against the same motion standards — so easing and continuity get judged from evidence,
+        not vibes. Below: the actual contact sheet from the signup flow, 80 frames.
+      </p>
+      <figure class="clip-frame reveal" style="--d: 60ms">
+        <div class="chrome-bar"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span><span class="chrome-title">signup-flow contact sheet — scroll ↓</span></div>
+        <div class="sheet-scroll"><img class="sheet" src="media/flow-contact-sheet.png" alt="Contact sheet of 80 captured frames from the signup flow, arranged in a grid with timestamps" loading="lazy"></div>
+        <figcaption class="clip-cap">what the model sees: timestamped bursts after navigation, typing and submit</figcaption>
+      </figure>
+    </article>
+  </section>
+
+  <!-- ————— the standard ————— -->
+  <section id="standard" class="wrap">
+    <p class="kicker reveal">the standard</p>
+    <h2 class="reveal">Six categories, machine-checkable</h2>
+    <p class="lede reveal" style="--d: 40ms">
+      The linter encodes Emil Kowalski's animation standards as exact constants — curves, duration
+      bands, scale floors. To prove it bites, we pointed <code>audit</code> at a playground page built
+      to fail. Every value below is that run's real output.
+    </p>
+
+    <div class="scorestrip reveal" style="--d: 80ms">
+      <span class="big">16<span style="font-size: 22px; color: var(--muted)">/100</span></span>
+      <span class="desc">Bad Motion Playground — 8 animations measured, 14 findings. The categories below each show one of them.</span>
+      <span class="counts"><span class="w">6 warnings</span> · <span class="s">8 suggestions</span></span>
+    </div>
+
+    <div class="cats">
+      <div class="cat reveal">
+        <div class="head"><span class="name">Easing</span><span class="chip warn">warning</span></div>
+        <p class="what">A modal enters with <span class="squig">ease-in</span> — it starts slow and delays the exact moment the user is watching.</p>
+        <div class="ba">
+          <div class="row before"><span class="lab">before</span><code>transition: transform 240ms ease-in</code></div>
+          <div class="row after"><span class="lab">after</span><code>cubic-bezier(0.23, 1, 0.32, 1)</code></div>
+        </div>
+        <p class="cite"><b>Standard</b> — Never <code>ease-in</code> on UI. Entering/exiting → ease-out.</p>
+      </div>
+
+      <div class="cat reveal" style="--d: 40ms">
+        <div class="head"><span class="name">Duration</span><span class="chip warn">warning</span></div>
+        <p class="what">A stats card animates for <span class="squig">700ms</span> — long transitions read as lag, not polish.</p>
+        <div class="ba">
+          <div class="row before"><span class="lab">before</span><code>700ms</code></div>
+          <div class="row after"><span class="lab">after</span><code>≤ 300ms (150–250ms sweet spot)</code></div>
+        </div>
+        <p class="cite"><b>Standard</b> — UI animations stay under 300ms; modals/drawers get 200–500ms.</p>
+      </div>
+
+      <div class="cat reveal" style="--d: 80ms">
+        <div class="head"><span class="name">Physicality</span><span class="chip warn">warning</span></div>
+        <p class="what">A toast pops in from <span class="squig">scale(0)</span> — nothing in the real world appears from nothing.</p>
+        <div class="ba">
+          <div class="row before"><span class="lab">before</span><code>from { transform: scale(0) }</code></div>
+          <div class="row after"><span class="lab">after</span><code>scale(0.95) + opacity: 0</code></div>
+        </div>
+        <p class="cite"><b>Standard</b> — Never scale(0). Entrances start from 0.9–0.97.</p>
+      </div>
+
+      <div class="cat reveal">
+        <div class="head"><span class="name">Performance</span><span class="chip warn">warning</span></div>
+        <p class="what">A banner animates <span class="squig">width</span>, forcing layout + paint every frame. Also flagged: <code>transition: all</code>, and an infinite wiggle on a badge.</p>
+        <div class="ba">
+          <div class="row before"><span class="lab">before</span><code>transition: width 350ms</code></div>
+          <div class="row after"><span class="lab">after</span><code>transform / opacity</code></div>
+        </div>
+        <p class="cite"><b>Standard</b> — Only animate transform and opacity; they skip layout/paint.</p>
+      </div>
+
+      <div class="cat reveal" style="--d: 40ms">
+        <div class="head"><span class="name">Cohesion</span><span class="chip sugg">suggestion</span></div>
+        <p class="what">The page hand-rolls <span class="squig">4 distinct</span> cubic-bezier curves — motion stops feeling like one system.</p>
+        <div class="ba">
+          <div class="row before"><span class="lab">before</span><code>4 curves</code></div>
+          <div class="row after"><span class="lab">after</span><code>--ease-out + --ease-in-out tokens</code></div>
+        </div>
+        <p class="cite"><b>Standard</b> — Curves and durations live as shared tokens.</p>
+      </div>
+
+      <div class="cat reveal" style="--d: 80ms">
+        <div class="head"><span class="name">Accessibility</span><span class="chip warn">warning</span></div>
+        <p class="what">Transform-based motion with <span class="squig">no reduced-motion path</span>, and hover motion that fires on touch taps.</p>
+        <div class="ba">
+          <div class="row before"><span class="lab">before</span><code>(no reduced-motion rule)</code></div>
+          <div class="row after"><span class="lab">after</span><code>@media (prefers-reduced-motion: reduce)</code></div>
+        </div>
+        <p class="cite"><b>Standard</b> — Honour prefers-reduced-motion: gentler, not zero.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ————— reports ————— -->
+  <section id="reports" class="wrap">
+    <p class="kicker reveal">the artifacts</p>
+    <h2 class="reveal">Reports designed like products</h2>
+    <p class="lede reveal" style="--d: 40ms">
+      Both HTML reports below are live — scroll them. They dogfood the same standards they enforce:
+      strong ease-out entrances, sub-300ms staggers, and a reduced-motion path.
+    </p>
+
+    <figure class="clip-frame report-frame reveal" style="--d: 60ms">
+      <div class="chrome-bar"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span><span class="chrome-title">audit-report.html — /loading · 64/100</span><a class="open-link" href="media/audit-report.html" target="_blank" rel="noopener">open ↗</a></div>
+      <iframe src="media/audit-report.html" title="MotionLint audit report for the loading route" loading="lazy"></iframe>
+      <figcaption class="clip-cap">audit report — score, findings with current → suggested easing curves drawn as graphs</figcaption>
+    </figure>
+
+    <figure class="clip-frame report-frame reveal">
+      <div class="chrome-bar"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span><span class="chrome-title">review-report.html — 12-dimension UX review</span><a class="open-link" href="media/review-report.html" target="_blank" rel="noopener">open ↗</a></div>
+      <iframe src="media/review-report.html" title="MotionLint review report with score ring and issue panels" loading="lazy"></iframe>
+      <figcaption class="clip-cap">review report — score ring, per-dimension breakdown, issue→fix panels with screenshots</figcaption>
+    </figure>
+  </section>
+
+  <!-- ————— accessibility ————— -->
+  <section id="a11y" class="wrap">
+    <p class="kicker reveal">standard 8 · accessibility</p>
+    <h2 class="reveal">Motion that respects the viewer</h2>
+    <p class="lede reveal" style="--d: 40ms">
+      The two newest rules in the linter are page-wide: they read the harvested stylesheet itself,
+      and they only fire when there's evidence — no stylesheet, no guess.
+    </p>
+
+    <div class="a11y-grid">
+      <div class="a11y-card reveal" style="--d: 60ms">
+        <h3>prefers-reduced-motion</h3>
+        <p>If a page animates movement (transform / keyframes) but ships no reduced-motion rule,
+        motion-sensitive users get no relief — large movement can trigger real vestibular symptoms.
+        The fix is gentler, not zero: drop transforms, keep opacity.</p>
+        <pre>@media (prefers-reduced-motion: reduce) {
+  .reveal {
+    transform: none;               /* no movement */
+    transition: opacity 260ms;     /* keep the fade */
+  }
+}</pre>
+      </div>
+      <div class="a11y-card reveal" style="--d: 100ms">
+        <h3>Hover gating for touch</h3>
+        <p>Touch devices fire a synthetic hover on every tap, so ungated <code>:hover</code> motion plays
+        when nobody asked for it. Gate hover-triggered animation behind media queries that mean
+        "there is actually a pointer hovering".</p>
+        <pre>@media (hover: hover) and (pointer: fine) {
+  .card:hover {
+    transform: translateY(-2px);
+  }
+}</pre>
+      </div>
+    </div>
+
+    <p class="selfnote reveal"><b>✓ This page practices what it lints.</b> Two shared easing tokens
+    (Emil's ease-out and ease-in-out), every transition ≤ 300ms, scale(0.97) press feedback, hover motion
+    gated for touch, and a full prefers-reduced-motion path — under reduced motion the reveals become pure
+    fades and the videos wait for you to press play.</p>
+  </section>
+</main>
+
+<!-- ————— footer ————— -->
+<footer>
+  <div class="wrap">
+    <h2 class="reveal">Run it yourself</h2>
+    <p class="lede reveal" style="--d: 40ms">Everything on this page regenerates from the repo — the mock provider means no API key is needed.</p>
+    <div class="runbox reveal" style="--d: 80ms">
+      <button class="btn" id="copy-cmds" aria-live="polite">copy</button>
+      <pre id="cmds"><span class="c"># serve the Aurora demo app → http://localhost:4173</span>
+node demo/server.mjs
+
+<span class="c"># deterministic motion lint (no LLM)</span>
+node dist/index.js audit  http://localhost:4173/loading -o audit.html
+
+<span class="c"># vision-LLM UX review (mock provider = offline)</span>
+node dist/index.js review http://localhost:4173 --provider mock --format html -o review.html
+
+<span class="c"># interactive animation tuner</span>
+node dist/index.js tune   http://localhost:4173 -o tuner.html
+
+<span class="c"># frame-by-frame flow review</span>
+node dist/index.js flow -u http://localhost:4173 --provider mock \
+  -s "navigate /signup; type input#email=ada@example.com; click button[type=submit]; capture"</pre>
+    </div>
+    <p class="foot-meta reveal">MotionLint · animation standards after <a href="https://emilkowal.ski/">Emil Kowalski</a> ·
+    clips recorded with vhs + Playwright, edited with ffmpeg · artifacts generated 2026-07-13</p>
+  </div>
+</footer>
+
+<script>
+  // Theme: manual toggle wins; otherwise follow the OS.
+  const root = document.documentElement;
+  const saved = localStorage.getItem("ml-theme");
+  if (saved === "light" || saved === "dark") root.dataset.theme = saved;
+  document.getElementById("theme-toggle").addEventListener("click", () => {
+    const dark = root.dataset.theme === "dark" ||
+      (!root.dataset.theme && matchMedia("(prefers-color-scheme: dark)").matches);
+    const next = dark ? "light" : "dark";
+    root.dataset.theme = next;
+    localStorage.setItem("ml-theme", next);
+  });
+
+  const reduceMotion = matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  // Scroll reveals — the CSS transition does the motion; we only add the class.
+  const revealed = new IntersectionObserver((entries) => {
+    for (const e of entries) {
+      if (e.isIntersecting) { e.target.classList.add("in"); revealed.unobserve(e.target); }
+    }
+  }, { rootMargin: "0px 0px -8% 0px" });
+  document.querySelectorAll(".reveal").forEach((el) => revealed.observe(el));
+
+  // Videos: play while on screen, pause off screen. Under reduced motion, never autoplay.
+  // A manual pause wins over the observer until the user presses play again.
+  const vids = document.querySelectorAll("video");
+  const userPaused = new WeakSet();
+  if (!reduceMotion) {
+    const vio = new IntersectionObserver((entries) => {
+      for (const e of entries) {
+        const v = e.target;
+        if (e.isIntersecting && !userPaused.has(v)) v.play().catch(() => {});
+        else if (!e.isIntersecting) v.pause();
+      }
+    }, { threshold: 0.35 });
+    vids.forEach((v) => vio.observe(v));
+  }
+  // Click / keyboard toggling either way.
+  vids.forEach((v) => {
+    v.tabIndex = 0;
+    const toggle = () => {
+      if (v.paused) { userPaused.delete(v); v.play().catch(() => {}); }
+      else { userPaused.add(v); v.pause(); }
+    };
+    v.addEventListener("click", toggle);
+    v.addEventListener("keydown", (e) => {
+      if (e.key === " " || e.key === "Enter") { e.preventDefault(); toggle(); }
+    });
+  });
+
+  // Copy the run-it commands.
+  const copyBtn = document.getElementById("copy-cmds");
+  copyBtn.addEventListener("click", async () => {
+    try {
+      await navigator.clipboard.writeText(document.getElementById("cmds").innerText);
+      copyBtn.textContent = "copied ✓";
+    } catch {
+      copyBtn.textContent = "select + copy";
+    }
+    setTimeout(() => { copyBtn.textContent = "copy"; }, 1600);
+  });
+</script>
+</body>
+</html>

@@ -1,0 +1,85 @@
+{
+  "url": "http://localhost:4173/loading",
+  "captured_at": "2026-07-13T23:56:35.196Z",
+  "viewport": {
+    "width": 1280,
+    "height": 800
+  },
+  "total_animations": 7,
+  "findings": [
+    {
+      "anim_id": "anim_7",
+      "selector": "html > body > main.container > div.features:nth-of-type(2) > div.feature:nth-of-type(1) > div.skeleton.sk-line:nth-of-type(1)",
+      "common_name": "Skeletons that don’t feel skeletal. / div",
+      "category": "duration",
+      "severity": "warning",
+      "title": "Duration 1400ms exceeds the UI budget",
+      "detail": "1400ms is over the 300ms ceiling for UI motion.",
+      "why": "Longer animations make the interface feel sluggish; a 180ms transition feels snappier than a 400ms one.",
+      "fix": "Reduce to ≤ 300ms (150–250ms is the sweet spot for most UI).",
+      "standard": "UI animations stay under 300ms (modals/drawers: 200–500ms).",
+      "current": "1400ms",
+      "suggested": "≤ 300ms"
+    },
+    {
+      "anim_id": "anim_21",
+      "selector": "body > main.container > section.section > div.sk-card:nth-of-type(2) > div:nth-of-type(1) > div.skeleton.sk-avatar:nth-of-type(1)",
+      "common_name": "Inbox skeleton / div",
+      "category": "duration",
+      "severity": "warning",
+      "title": "Duration 1400ms exceeds the UI budget",
+      "detail": "1400ms is over the 300ms ceiling for UI motion.",
+      "why": "Longer animations make the interface feel sluggish; a 180ms transition feels snappier than a 400ms one.",
+      "fix": "Reduce to ≤ 300ms (150–250ms is the sweet spot for most UI).",
+      "standard": "UI animations stay under 300ms (modals/drawers: 200–500ms).",
+      "current": "1400ms",
+      "suggested": "≤ 300ms"
+    },
+    {
+      "anim_id": "*",
+      "selector": "(project-wide)",
+      "common_name": "Page stylesheet",
+      "category": "accessibility",
+      "severity": "warning",
+      "title": "No prefers-reduced-motion path",
+      "detail": "The page animates movement (transform / keyframes) but ships no `@media (prefers-reduced-motion: reduce)` rule.",
+      "why": "Motion-sensitive users get no relief; large movement can trigger nausea or vestibular symptoms.",
+      "fix": "Add `@media (prefers-reduced-motion: reduce)` that drops transform-based motion while keeping opacity/colour transitions.",
+      "standard": "Honour prefers-reduced-motion — gentler, not zero.",
+      "current": "(no reduced-motion rule)",
+      "suggested": "@media (prefers-reduced-motion: reduce) { … }"
+    },
+    {
+      "anim_id": "anim_21",
+      "selector": "body > main.container > section.section > div.sk-card:nth-of-type(2) > div:nth-of-type(1) > div.skeleton.sk-avatar:nth-of-type(1)",
+      "common_name": "Inbox skeleton / div",
+      "category": "easing",
+      "severity": "suggestion",
+      "title": "Weak built-in easing on an entrance",
+      "detail": "`linear` is too soft for a deliberate entrance. Built-in CSS easings barely accelerate.",
+      "why": "A stronger curve reads as intentional and responsive rather than generic.",
+      "fix": "Use a strong ease-out token: `cubic-bezier(0.23, 1, 0.32, 1)`.",
+      "standard": "Built-in CSS easings are too weak — use strong custom curves.",
+      "current": "linear",
+      "suggested": "cubic-bezier(0.23, 1, 0.32, 1)"
+    },
+    {
+      "anim_id": "*",
+      "selector": "(project-wide)",
+      "common_name": "Hover motion",
+      "category": "accessibility",
+      "severity": "suggestion",
+      "title": "Hover motion isn't gated for touch",
+      "detail": "Hover-triggered motion isn't wrapped in `@media (hover: hover) and (pointer: fine)`.",
+      "why": "Touch devices fire a synthetic hover on tap, so the animation plays on every touch — a false positive the user never intended.",
+      "fix": "Gate hover animations behind `@media (hover: hover) and (pointer: fine)`.",
+      "standard": "Gate hover motion behind (hover: hover) and (pointer: fine).",
+      "current": "(ungated :hover)",
+      "suggested": "@media (hover: hover) and (pointer: fine) { … }"
+    }
+  ],
+  "critical_count": 0,
+  "warning_count": 3,
+  "suggestion_count": 2,
+  "score": 64
+}
