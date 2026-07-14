@@ -4,6 +4,7 @@ import { readFile } from "node:fs/promises";
 import { runReview } from "../pipeline.js";
 import { loadConfig } from "../config/loader.js";
 import { parseInteractionsFromString } from "../capture/interactions.js";
+import { discoverRoutes } from "../capture/discover.js";
 import { summarize } from "./output.js";
 import type { OutputFormat, IssueSeverity } from "../types.js";
 
@@ -26,6 +27,7 @@ export function buildProgram(): Command {
     .command("review <url>")
     .description("Capture a URL at multiple viewports and analyze it for UX issues.")
     .option("-r, --routes <list>", "Comma-separated additional paths to also review (joined to base URL).")
+    .option("--discover-routes", "Auto-discover routes from /sitemap.xml and a Next.js app directory in cwd.", false)
     .option("-v, --viewport <name>", "Single viewport (mobile|tablet|desktop). Repeatable: -v mobile -v desktop.", collectViewport, [] as string[])
     .option("--viewports <list>", "Comma-separated viewport names.")
     .option("--provider <name>", "Provider: auto|ollama|anthropic|openai|google|mock.")
@@ -463,6 +465,7 @@ function parsePositiveInt(value: string | undefined, flag: string): number | und
 
 interface ReviewOptions {
   routes?: string;
+  discoverRoutes?: boolean;
   viewport?: string[];
   viewports?: string;
   provider?: string;
@@ -531,7 +534,21 @@ async function runReviewCommand(rawUrl: string, opts: ReviewOptions): Promise<vo
   const maxTokens = parsePositiveInt(opts.maxTokens, "--max-tokens");
 
   const interactions = await readInteractions(opts.interactions);
-  const targets = buildUrlList(rawUrl, opts.routes);
+  let targets = buildUrlList(rawUrl, opts.routes);
+  if (opts.discoverRoutes) {
+    const discovered = await discoverRoutes({ url: rawUrl });
+    const base = new URL(rawUrl);
+    const merged = new Set(targets);
+    for (const path of discovered) {
+      const u = new URL(base.toString());
+      u.pathname = path;
+      merged.add(u.toString());
+    }
+    targets = [...merged];
+    if (!opts.quiet) {
+      console.error(kleur.gray(`  discovered ${discovered.length} route(s) → reviewing ${targets.length} URL(s)`));
+    }
+  }
 
   let highestExit = 0;
   for (const url of targets) {

@@ -59,6 +59,9 @@ motionlint tune http://localhost:3000
 # Lint a page's motion against Emil Kowalski's standards → polished HTML audit (no LLM).
 motionlint audit http://localhost:3000 --open
 
+# Review every route the site knows about (sitemap.xml + Next.js app/ directory).
+motionlint review http://localhost:3000 --discover-routes
+
 # Polished, shareable HTML review with embedded screenshots + before/after fixes.
 motionlint review http://localhost:3000 --format html -o review.html
 
