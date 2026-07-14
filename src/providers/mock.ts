@@ -41,17 +41,21 @@ export class MockProvider implements VisionProvider {
     return true;
   }
 
-  async analyze(screenshot: Buffer, _prompt: string, viewportName: string): Promise<AnalysisResult> {
+  async analyze(screenshot: Buffer, prompt: string, viewportName: string): Promise<AnalysisResult> {
     // Touch sharp so the mock at least decodes the image (catches truly broken captures).
     const { data } = await compressForLLM(screenshot, { format: "jpeg", maxWidth: 320, quality: 60 });
     const fingerprint = data.length;
 
+    // When the prompt lists element refs, cite the first one like a real model
+    // would — keeps the annotation path exercisable offline.
+    const hasRefs = prompt.includes("## Interactive elements (stable refs)");
     const issues = SAMPLE_ISSUES.map((i, idx) => ({
       ...i,
       location: `${i.location} (${viewportName})`,
       issue: idx === 0 && viewportName === "mobile"
         ? `${i.issue} On mobile this is amplified because the CTA risks falling below the fold.`
         : i.issue,
+      ...(hasRefs && idx === 0 ? { element_ref: "E1" } : {}),
     }));
 
     return {

@@ -46,17 +46,37 @@ function renderIssue(issue: UXIssue, index: number): string {
       <span class="tag">${escapeHtml(issue.category)}</span>
       <h3>${escapeHtml(issue.issue)}</h3>
     </div>
-    <p class="loc">📍 ${escapeHtml(issue.location || "unspecified location")}</p>
+    <p class="loc">📍 ${escapeHtml(issue.location || "unspecified location")}${
+      issue.element_ref ? ` · <span class="mono">${escapeHtml(issue.element_ref)}</span>` : ""
+    }</p>
     <div class="field"><span class="lbl">Why it matters</span>${escapeHtml(issue.why_it_matters)}</div>
     ${ba}
     ${idLine}
   </article>`;
 }
 
+function annotationOverlays(entry: AnalysisEntry): string {
+  const page = entry.capture.dom?.page;
+  if (!page || page.width <= 0 || page.height <= 0) return "";
+  // Rects are document coordinates: they only line up with a full-page capture
+  // of a page whose width matches the screenshot. Viewport-only captures and
+  // horizontally-overflowing pages would misplace every box — skip instead.
+  if (!entry.capture.fullPage || entry.capture.dom?.horizontal_overflow) return "";
+  const pct = (v: number, total: number) => `${((v / total) * 100).toFixed(2)}%`;
+  return sortIssues(entry.analysis.issues)
+    .filter((i) => i.element_rect)
+    .map((i) => {
+      const r = i.element_rect as NonNullable<UXIssue["element_rect"]>;
+      const style = `left:${pct(r.x, page.width)};top:${pct(r.y, page.height)};width:${pct(r.w, page.width)};height:${pct(r.h, page.height)}`;
+      return `<div class="anno sev-${i.severity}" style="${style}"><span class="anno-tag">${escapeHtml(i.element_ref ?? "")}</span></div>`;
+    })
+    .join("");
+}
+
 function renderViewport(entry: AnalysisEntry): string {
   const { capture, analysis } = entry;
   const shot = capture.screenshot?.length
-    ? `<div class="shot"><img alt="${escapeHtml(capture.viewport.name)} screenshot" src="data:image/png;base64,${capture.screenshot.toString("base64")}"></div>`
+    ? `<div class="shot"><img alt="${escapeHtml(capture.viewport.name)} screenshot" src="data:image/png;base64,${capture.screenshot.toString("base64")}">${annotationOverlays(entry)}</div>`
     : "";
   const issues = analysis.issues.length
     ? sortIssues(analysis.issues).map(renderIssue).join("\n")

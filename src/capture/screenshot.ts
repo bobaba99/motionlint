@@ -3,6 +3,7 @@ import { dirname, join } from "node:path";
 import { createHash } from "node:crypto";
 import type { CaptureOptions, CaptureResult, InteractionStep, Viewport } from "../types.js";
 import { launchBrowserSession } from "./browser.js";
+import { captureDomSnapshot, type DomSnapshot } from "./dom.js";
 
 function slug(input: string): string {
   return createHash("sha1").update(input).digest("hex").slice(0, 10);
@@ -102,6 +103,15 @@ export async function captureScreenshot(opts: CaptureOptions): Promise<CaptureRe
       await page.waitForTimeout(300);
     }
 
+    let dom: DomSnapshot | undefined;
+    if (opts.withDom) {
+      try {
+        dom = await captureDomSnapshot(page);
+      } catch {
+        /* the snapshot is an enhancement, never a capture failure */
+      }
+    }
+
     const fullPage = opts.fullPage ?? true;
     const screenshot = await page.screenshot({ type: "png", fullPage });
 
@@ -136,6 +146,7 @@ export async function captureScreenshot(opts: CaptureOptions): Promise<CaptureRe
       videoPath,
       fullPage,
       timestamp: new Date().toISOString(),
+      ...(dom ? { dom } : {}),
     };
   } finally {
     await session.close();

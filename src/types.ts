@@ -28,6 +28,8 @@ export interface CaptureOptions {
   screenshotDir?: string;
   interactions?: InteractionStep[];
   auth?: AuthConfig;
+  /** Also capture a DOM snapshot (element refs + measurements) alongside the screenshot. */
+  withDom?: boolean;
 }
 
 export interface CaptureResult {
@@ -38,6 +40,8 @@ export interface CaptureResult {
   videoPath?: string;
   fullPage: boolean;
   timestamp: string;
+  /** DOM snapshot captured with the screenshot (when withDom was set). */
+  dom?: import("./capture/dom.js").DomSnapshot;
 }
 
 export type IssueCategory =
@@ -67,6 +71,10 @@ export interface UXIssue {
   hash?: string;
   /** How many prior runs recorded this finding at this URL (set when memory is enabled). */
   previously_seen?: number;
+  /** Ref of the DOM element this issue concerns (e.g. "E3"), cited by the model from the capture's element list. */
+  element_ref?: string;
+  /** The cited element's rect in document CSS px — resolved from the DOM snapshot, drawn on annotated screenshots. */
+  element_rect?: { x: number; y: number; w: number; h: number };
 }
 
 /** Tokens consumed by one provider call, normalized across providers. */

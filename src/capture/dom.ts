@@ -1,9 +1,22 @@
 import type { Page } from "playwright";
 
+/** A notable on-page element the model can cite by ref ("E3") in findings. */
+export interface DomElementRef {
+  ref: string;
+  selector: string;
+  label: string;
+  /** Document coordinates in CSS px (measured at scroll origin). */
+  rect: Rect;
+}
+
 export interface DomSnapshot {
   url: string;
   title: string;
   viewport: { width: number; height: number };
+  /** Full document dimensions in CSS px — the coordinate space of `elements` rects and full-page screenshots. */
+  page: { width: number; height: number };
+  /** Notable elements with stable refs, for grounded findings and annotated screenshots. */
+  elements: DomElementRef[];
   text_outline: string[];
   forms: Array<{ inputs: number; buttons: number; labels: number; inputs_without_labels: number }>;
   ctas: Array<{ text: string; tag: string; rect: Rect; effective_size: number }>;
@@ -29,7 +42,20 @@ interface Rect { x: number; y: number; w: number; h: number }
  * visual judgment against the numbers.
  */
 export async function captureDomSnapshot(page: Page): Promise<DomSnapshot> {
-  return await page.evaluate(() => {
+  // Wrapped with a `__name` shim: esbuild-based loaders (tsx) transform this
+  // module with keepNames, sprinkling `__name(...)` helper calls through the
+  // serialized function body — a helper that doesn't exist in the browser.
+  // Building the wrapper via `new Function` keeps the shim (the wrapper source
+  // is never transformed) while letting Playwright pass it through
+  // Runtime.callFunctionOn — unlike a string, which Runtime.evaluate would
+  // refuse on pages with a CSP lacking 'unsafe-eval'.
+  const src = snapshotPage.toString();
+  const wrapped = new Function(`var __name = (f) => f; return (${src})();`) as () => DomSnapshot;
+  return await page.evaluate(wrapped);
+}
+
+function snapshotPage(): DomSnapshot {
+  {
     const doc = document;
     const win = window;
 
@@ -139,6 +165,42 @@ export async function captureDomSnapshot(page: Page): Promise<DomSnapshot> {
     const skeletons = doc.querySelectorAll("[class*=skeleton], [class*=shimmer], [class*=placeholder]").length;
     const progressbars = doc.querySelectorAll("progress, [role=progressbar]").length;
 
+    // Notable elements with stable refs — interactive controls and headings the
+    // model can cite (element_ref) so findings map back to exact pixel rects.
+    const docRect = (el: Element): { x: number; y: number; w: number; h: number } => {
+      const r = (el as HTMLElement).getBoundingClientRect();
+      return {
+        x: Math.round(r.x + win.scrollX),
+        y: Math.round(r.y + win.scrollY),
+        w: Math.round(r.width),
+        h: Math.round(r.height),
+      };
+    };
+    const shortSelector = (el: Element): string => {
+      const tag = el.tagName.toLowerCase();
+      const id = (el as HTMLElement).id;
+      if (id) return `${tag}#${id}`;
+      const cls = String((el as HTMLElement).className || "").trim().split(/\s+/).filter(Boolean)[0];
+      return cls ? `${tag}.${cls}` : tag;
+    };
+    const elements: Array<{ ref: string; selector: string; label: string; rect: { x: number; y: number; w: number; h: number } }> = [];
+    const seenRects = new Set<string>();
+    doc.querySelectorAll("h1, h2, h3, button, a, input, select, textarea, [role=button], img").forEach((el) => {
+      if (elements.length >= 30) return;
+      if (!isVisible(el)) return;
+      const r = docRect(el);
+      if (r.w < 8 || r.h < 8) return;
+      const key = `${r.x},${r.y},${r.w},${r.h}`;
+      if (seenRects.has(key)) return;
+      seenRects.add(key);
+      const label =
+        text(el).slice(0, 60) ||
+        (el as HTMLElement).getAttribute("aria-label") ||
+        (el as HTMLImageElement).alt ||
+        el.tagName.toLowerCase();
+      elements.push({ ref: `E${elements.length + 1}`, selector: shortSelector(el), label, rect: r });
+    });
+
     // Empty interactive lists.
     const empty_lists: Array<{ selector: string; rect: { x: number; y: number; w: number; h: number } }> = [];
     doc.querySelectorAll("ul, ol, [role=list], [data-list]").forEach((el) => {
@@ -194,6 +256,8 @@ export async function captureDomSnapshot(page: Page): Promise<DomSnapshot> {
       url: location.href,
       title: doc.title,
       viewport: { width: win.innerWidth, height: win.innerHeight },
+      page: { width: doc.documentElement.scrollWidth, height: doc.documentElement.scrollHeight },
+      elements,
       text_outline: text_outline.slice(0, 80),
       forms,
       ctas: ctas.slice(0, 20),
@@ -213,5 +277,5 @@ export async function captureDomSnapshot(page: Page): Promise<DomSnapshot> {
         "Information density / overall 'busyness'.",
       ],
     };
-  });
+  }
 }

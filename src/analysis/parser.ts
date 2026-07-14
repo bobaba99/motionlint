@@ -30,6 +30,8 @@ function coerceIssue(raw: unknown): UXIssue | null {
   const location = String(r.location ?? "").trim();
   const issue = String(r.issue ?? "").trim();
   if (!issue) return null;
+  const rawRef = String(r.element_ref ?? "").trim().toUpperCase();
+  const element_ref = /^E\d{1,3}$/.test(rawRef) ? rawRef : undefined;
   return {
     category,
     severity,
@@ -37,6 +39,7 @@ function coerceIssue(raw: unknown): UXIssue | null {
     issue,
     why_it_matters: String(r.why_it_matters ?? "").trim(),
     fix: String(r.fix ?? "").trim(),
+    ...(element_ref ? { element_ref } : {}),
   };
 }
 

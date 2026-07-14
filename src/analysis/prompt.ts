@@ -66,6 +66,8 @@ export interface PromptOptions {
   domSnapshot?: unknown;
   /** Multi-viewport mosaic mode — instructs the model to compare viewports. */
   mosaic?: { viewports: Array<{ name: string; width: number; height: number }> };
+  /** Notable page elements with stable refs — lets the model ground findings via "element_ref". */
+  elements?: Array<{ ref: string; selector: string; label: string; rect: { x: number; y: number; w: number; h: number } }>;
 }
 
 export async function buildPrompt(opts: PromptOptions): Promise<string> {
@@ -96,6 +98,18 @@ export async function buildPrompt(opts: PromptOptions): Promise<string> {
       `\n\n## DOM measurements (ground truth — do not trust pixels alone)\n` +
       `The following JSON contains computed measurements extracted from the live page. Treat it as authoritative for sizes, counts, and overflow. Cross-check your visual judgment against it.\n` +
       "```json\n" + JSON.stringify(opts.domSnapshot, null, 2) + "\n```",
+    );
+  }
+
+  if (opts.elements?.length) {
+    const lines = opts.elements.map(
+      (e) => `${e.ref} — <${e.selector}> "${e.label}" at (${e.rect.x}, ${e.rect.y}) ${e.rect.w}×${e.rect.h}px`,
+    );
+    parts.push(
+      `\n\n## Interactive elements (stable refs)\n` +
+      `These elements were measured on the live page (document coordinates, CSS px):\n` +
+      lines.join("\n") +
+      `\n\nWhen an issue concerns one of these elements, add "element_ref": "<ref>" (e.g. "element_ref": "E3") to that issue object so the finding can be drawn on the screenshot. Omit it when no listed element fits.`,
     );
   }
 

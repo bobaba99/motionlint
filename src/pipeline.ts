@@ -2,6 +2,7 @@ import { mkdir, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { captureScreenshot } from "./capture/screenshot.js";
 import { buildPrompt } from "./analysis/prompt.js";
+import { resolveElementRefs } from "./analysis/annotate.js";
 import { resolveProvider } from "./providers/resolver.js";
 import { sharedRateLimiter, withRateLimit } from "./resources/limiter.js";
 import { addUsage, budgetExhausted, emptyRunUsage } from "./resources/usage.js";
@@ -129,6 +130,7 @@ export async function runReview(opts: RunReviewOptions): Promise<RunReviewResult
       screenshotDir: config.screenshotDir,
       auth: config.auth,
       interactions: opts.interactions,
+      withDom: true,
     });
     onProgress?.({ type: "capture_done", capture });
     captures.push(capture);
@@ -150,8 +152,12 @@ export async function runReview(opts: RunReviewOptions): Promise<RunReviewResult
     const prompt = await buildPrompt({
       viewportName: capture.viewport.name,
       rulesPath: opts.rulesPath ?? config.rules,
+      elements: capture.dom?.elements,
     });
-    const analysis = await provider.analyze(capture.screenshot, prompt, capture.viewport.name);
+    const analysis = resolveElementRefs(
+      await provider.analyze(capture.screenshot, prompt, capture.viewport.name),
+      capture.dom,
+    );
     usage = addUsage(usage, analysis.usage);
     const entry: AnalysisEntry = { capture, analysis };
     analyses.push(entry);

@@ -174,8 +174,18 @@ code {
 .ba .arrow { align-self: center; color: var(--text-faint); font-size: 18px; }
 
 /* — Screenshot — */
-.shot { margin: 8px 0 20px; border-radius: 12px; overflow: hidden; border: 1px solid var(--border); box-shadow: var(--shadow); }
+.shot { margin: 8px 0 20px; border-radius: 12px; overflow: hidden; border: 1px solid var(--border); box-shadow: var(--shadow); position: relative; }
 .shot img { display: block; width: 100%; height: auto; }
+
+/* — Finding annotations drawn over the screenshot — */
+.anno { position: absolute; border: 2px solid var(--suggestion); border-radius: 6px; pointer-events: none; box-shadow: 0 0 0 2px rgba(0,0,0,0.25); }
+.anno .anno-tag {
+  position: absolute; top: -10px; left: -2px; transform: translateY(-100%);
+  font: 700 11px ui-monospace, monospace; letter-spacing: 0.04em;
+  color: #fff; background: var(--suggestion); border-radius: 5px; padding: 2px 6px;
+}
+.anno.sev-critical { border-color: var(--critical); } .anno.sev-critical .anno-tag { background: var(--critical); }
+.anno.sev-warning { border-color: var(--warning); } .anno.sev-warning .anno-tag { background: var(--warning); color: #1a1204; }
 
 /* — Footer — */
 .foot { margin-top: 48px; padding-top: 20px; border-top: 1px solid var(--border); color: var(--text-faint); font-size: 12.5px; text-align: center; }

@@ -31,6 +31,10 @@ function sortIssues(issues: UXIssue[]): UXIssue[] {
 
 function renderIssue(issue: UXIssue): string {
   const lines = [`- **[${severityBadge(issue.severity)}] ${issue.category}** — _${issue.location || "unknown location"}_`];
+  if (issue.element_ref && issue.element_rect) {
+    const r = issue.element_rect;
+    lines.push(`  - **Where:** \`${issue.element_ref}\` at (${r.x}, ${r.y}) ${r.w}×${r.h}px`);
+  }
   if (issue.hash) {
     const seen = issue.previously_seen && issue.previously_seen > 0
       ? ` · seen in ${issue.previously_seen} prior run${issue.previously_seen === 1 ? "" : "s"}`

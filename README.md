@@ -442,6 +442,8 @@ MotionLint exits with `1` when critical issues exceed the configured threshold (
 
 Override the prompt with `--rules path/to/your-design-rules.md` to inject project-specific heuristics.
 
+Every review capture also takes a **DOM snapshot**: notable elements (headings, CTAs, inputs) get stable refs (`E1`, `E2`, …) with measured pixel rects, listed in the prompt so the model can ground a finding with `"element_ref": "E3"`. Cited refs resolve back to their rects and are **drawn as severity-colored bounding boxes on the screenshot** in the HTML report (and reported as `Where: E3 at (x, y) w×h` in markdown). Refs the page never listed are dropped — the model can't annotate what it wasn't shown.
+
 With `--format html` the findings render as a single shareable report — score ring, per-dimension breakdown, and an issue → fix panel per finding with the annotated screenshot:
 
 <p align="center">
