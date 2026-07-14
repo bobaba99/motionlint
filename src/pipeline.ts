@@ -4,6 +4,7 @@ import { captureScreenshot } from "./capture/screenshot.js";
 import { buildPrompt } from "./analysis/prompt.js";
 import { resolveProvider } from "./providers/resolver.js";
 import { sharedRateLimiter, withRateLimit } from "./resources/limiter.js";
+import { addUsage, budgetExhausted, emptyRunUsage } from "./resources/usage.js";
 import { aggregate } from "./report/aggregate.js";
 import { loadBaseline } from "./memory/baseline.js";
 import { applyMemory, type MemoryFilterResult } from "./memory/filter.js";
@@ -48,6 +49,8 @@ export interface RunReviewOptions {
   baselinePath?: string | null;
   /** Report only findings not seen in prior runs; falls back to config.memory.newOnly. */
   newOnly?: boolean;
+  /** Token budget override for this run; falls back to config.resources.maxTokensPerRun. */
+  maxTokens?: number | null;
   onProgress?: (event: ProgressEvent) => void;
 }
 
@@ -58,6 +61,7 @@ export type ProgressEvent =
   | { type: "analyze_start"; viewport: Viewport }
   | { type: "analyze_done"; viewport: Viewport; entry: AnalysisEntry }
   | { type: "memory_warning"; message: string }
+  | { type: "budget_exhausted"; viewport: Viewport; totalTokens: number; limit: number }
   | { type: "report_written"; path: string; format: OutputFormat };
 
 export interface RunReviewResult {
@@ -130,14 +134,25 @@ export async function runReview(opts: RunReviewOptions): Promise<RunReviewResult
     captures.push(capture);
   }
 
+  const tokenLimit = opts.maxTokens !== undefined ? opts.maxTokens : config.resources.maxTokensPerRun;
+  let usage = emptyRunUsage(typeof tokenLimit === "number" && tokenLimit > 0 ? tokenLimit : null);
+
   const analyses: AnalysisEntry[] = [];
   for (const capture of captures) {
+    // Cost ceiling: once the running total crosses the budget, stop paying for
+    // further viewports — the report carries what was analyzed plus the skip list.
+    if (budgetExhausted(usage)) {
+      usage = { ...usage, skipped_viewports: [...usage.skipped_viewports, capture.viewport.name] };
+      onProgress?.({ type: "budget_exhausted", viewport: capture.viewport, totalTokens: usage.total_tokens, limit: usage.limit as number });
+      continue;
+    }
     onProgress?.({ type: "analyze_start", viewport: capture.viewport });
     const prompt = await buildPrompt({
       viewportName: capture.viewport.name,
       rulesPath: opts.rulesPath ?? config.rules,
     });
     const analysis = await provider.analyze(capture.screenshot, prompt, capture.viewport.name);
+    usage = addUsage(usage, analysis.usage);
     const entry: AnalysisEntry = { capture, analysis };
     analyses.push(entry);
     onProgress?.({ type: "analyze_done", viewport: capture.viewport, entry });
@@ -188,6 +203,7 @@ export async function runReview(opts: RunReviewOptions): Promise<RunReviewResult
   const report = aggregate(url, provider.name, provider.model, reportAnalyses, {
     maxFindings: opts.maxFindings !== undefined ? opts.maxFindings : config.maxFindings,
     omitted: memoryOmitted,
+    usage,
   });
 
   const format: OutputFormat = opts.format ?? "md";

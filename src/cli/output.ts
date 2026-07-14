@@ -1,5 +1,6 @@
 import kleur from "kleur";
 import type { ReviewReport, IssueSeverity } from "../types.js";
+import { formatUsageLine } from "../resources/usage.js";
 
 export function severityColor(s: IssueSeverity, text: string): string {
   switch (s) {
@@ -29,6 +30,9 @@ export function summarize(report: ReviewReport): string {
   ].filter(Boolean);
   if (omittedParts.length > 0) {
     lines.push(kleur.dim(`Omitted: ${omittedParts.join(" · ")}`));
+  }
+  if (report.usage && report.usage.total_tokens > 0) {
+    lines.push(kleur.dim(`Tokens: ${formatUsageLine(report.usage)}`));
   }
   lines.push("");
 

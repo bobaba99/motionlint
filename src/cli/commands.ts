@@ -42,6 +42,7 @@ export function buildProgram(): Command {
     .option("--threshold <severity>", `CI severity threshold: ${VALID_SEVERITIES.join("|")}.`)
     .option("--max-findings <n>", "Keep only the top N findings per run, severity-ordered (agent focus).")
     .option("--max-pr-annotations <n>", "SARIF only: emit at most N results per report, severity-ordered (reviewer fatigue).")
+    .option("--max-tokens <n>", "Token budget for the run — once crossed, remaining viewports are skipped (cost ceiling).")
     .option("--baseline <path>", "Baseline file of finding ids to suppress (default: .motionlintignore).")
     .option("--new-only", "Report only findings not seen in prior runs of the same URL.", false)
     .option("--no-memory", "Disable cross-run memory: no finding ids, no baseline, no state written.")
@@ -478,6 +479,7 @@ interface ReviewOptions {
   threshold?: string;
   maxFindings?: string;
   maxPrAnnotations?: string;
+  maxTokens?: string;
   baseline?: string;
   newOnly?: boolean;
   memory?: boolean;
@@ -526,6 +528,7 @@ async function runReviewCommand(rawUrl: string, opts: ReviewOptions): Promise<vo
 
   const maxFindings = parsePositiveInt(opts.maxFindings, "--max-findings");
   const maxPrAnnotations = parsePositiveInt(opts.maxPrAnnotations, "--max-pr-annotations");
+  const maxTokens = parsePositiveInt(opts.maxTokens, "--max-tokens");
 
   const interactions = await readInteractions(opts.interactions);
   const targets = buildUrlList(rawUrl, opts.routes);
@@ -548,6 +551,7 @@ async function runReviewCommand(rawUrl: string, opts: ReviewOptions): Promise<vo
       embedScreenshots: opts.embed ?? false,
       maxFindings,
       maxPrAnnotations,
+      maxTokens,
       // commander defaults negated flags to true, so only an explicit --no-memory overrides config
       memory: opts.memory === false ? false : undefined,
       baselinePath: opts.baseline ?? undefined,
@@ -566,6 +570,9 @@ async function runReviewCommand(rawUrl: string, opts: ReviewOptions): Promise<vo
             break;
           case "memory_warning":
             console.error(kleur.yellow(`  memory: ${event.message}`));
+            break;
+          case "budget_exhausted":
+            console.error(kleur.yellow(`  budget: ${event.totalTokens.toLocaleString("en-US")} tokens ≥ ${event.limit.toLocaleString("en-US")} — skipping ${event.viewport.name}`));
             break;
           case "report_written":
             console.error(kleur.green(`  report → ${event.path}`));

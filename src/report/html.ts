@@ -5,6 +5,7 @@
  */
 import type { AnalysisEntry, ReviewReport, UXIssue, IssueSeverity } from "../types.js";
 import { escapeHtml, htmlShell, scoreRing, severityPills } from "./html_shell.js";
+import { formatUsageLine } from "../resources/usage.js";
 
 const SEV_ORDER: Record<IssueSeverity, number> = { critical: 0, warning: 1, suggestion: 2 };
 
@@ -87,7 +88,7 @@ export function renderReviewHtmlReport(report: ReviewReport): string {
     ${scoreRing(report.aggregate_score * 10)}
     <div class="headline">
       <h2>${escapeHtml(h.title)}</h2>
-      <p>${escapeHtml(h.blurb)} · ${report.analyses.length} viewport${report.analyses.length === 1 ? "" : "s"} reviewed · aggregate ${report.aggregate_score}/10</p>
+      <p>${escapeHtml(h.blurb)} · ${report.analyses.length} viewport${report.analyses.length === 1 ? "" : "s"} reviewed · aggregate ${report.aggregate_score}/10${report.usage ? ` · ${escapeHtml(formatUsageLine(report.usage))}` : ""}</p>
     </div>
     ${severityPills({ critical: report.critical_count, warning: report.warning_count, suggestion: report.suggestion_count })}
   </div>`;

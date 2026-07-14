@@ -63,6 +63,8 @@ export class MockProvider implements VisionProvider {
         "Layout fits within the target viewport without horizontal scroll.",
       ],
       viewport: viewportName,
+      // Deterministic synthetic usage so budget/accounting paths are testable offline.
+      usage: { input_tokens: 1000, output_tokens: 250, total_tokens: 1250 },
     };
   }
 }

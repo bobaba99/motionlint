@@ -99,11 +99,23 @@ export function mergeRuns(runs: AnalysisResult[], threshold: number, viewport: s
   const strengthSet = new Set<string>();
   for (const r of runs) for (const s of r.strengths) strengthSet.add(s);
 
+  // Sum usage across samples — the caller paid for every one of them.
+  const reported = runs.filter((r) => r.usage);
+  const usage = reported.length === 0 ? undefined : reported.reduce(
+    (acc, r) => ({
+      input_tokens: acc.input_tokens + (r.usage?.input_tokens ?? 0),
+      output_tokens: acc.output_tokens + (r.usage?.output_tokens ?? 0),
+      total_tokens: acc.total_tokens + (r.usage?.total_tokens ?? 0),
+    }),
+    { input_tokens: 0, output_tokens: 0, total_tokens: 0 },
+  );
+
   return {
     overall_score: median,
     summary,
     issues: survivors,
     strengths: [...strengthSet],
     viewport,
+    ...(usage ? { usage } : {}),
   };
 }

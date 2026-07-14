@@ -1,5 +1,6 @@
 import type { AnalysisResult, VisionProvider } from "../types.js";
 import { parseAnalysisResponse } from "../analysis/parser.js";
+import { usageFromGoogle } from "../resources/usage.js";
 import { compressForLLM } from "./util.js";
 
 export interface GoogleProviderOptions {
@@ -55,6 +56,6 @@ export class GoogleProvider implements VisionProvider {
     };
     const json = (await res.json()) as GoogleResponse;
     const text = (json.candidates?.[0]?.content?.parts ?? []).map((p) => p.text ?? "").join("\n");
-    return parseAnalysisResponse(text, viewportName);
+    return { ...parseAnalysisResponse(text, viewportName), usage: usageFromGoogle(json) };
   }
 }

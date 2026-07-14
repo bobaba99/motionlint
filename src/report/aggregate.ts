@@ -1,4 +1,4 @@
-import type { AnalysisEntry, ReviewReport, IssueSeverity } from "../types.js";
+import type { AnalysisEntry, ReviewReport, IssueSeverity, RunUsage } from "../types.js";
 
 const SEVERITY_RANK: Record<IssueSeverity, number> = { critical: 0, warning: 1, suggestion: 2 };
 
@@ -7,6 +7,8 @@ export interface AggregateOptions {
   maxFindings?: number | null;
   /** Omission counts from upstream filters (baseline / memory), carried into the report. */
   omitted?: { by_baseline?: number; by_memory?: number };
+  /** Token accounting for the run, carried into the report. */
+  usage?: RunUsage;
 }
 
 /**
@@ -80,5 +82,6 @@ export function aggregate(
       by_baseline: opts.omitted?.by_baseline ?? 0,
       by_memory: opts.omitted?.by_memory ?? 0,
     },
+    ...(opts.usage ? { usage: opts.usage } : {}),
   };
 }

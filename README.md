@@ -475,7 +475,7 @@ Drop a `.motionlintrc.json` in your repo root (or use `motionlint.config.js` / a
     "baseline": ".motionlintignore",
     "newOnly": false
   },
-  "resources": { "maxConcurrentReviews": null, "providerCallsPerMinute": null },
+  "resources": { "maxConcurrentReviews": null, "providerCallsPerMinute": null, "maxTokensPerRun": null },
   "ci": { "threshold": "warning", "failOnCritical": true },
   "auth": { "cookies": null, "localStorage": null, "beforeNavigate": null }
 }
@@ -488,6 +488,7 @@ Re-running review on the same routes used to surface the same findings every run
 - **Per-run output cap** — `--max-findings N` (or `maxFindings` in config) keeps only the top N findings per run, severity-ordered, so an agent works on what matters most first. The report's `Omitted` line says how many were capped.
 - **PR-surface cap** — `--max-pr-annotations N` (or `maxPrAnnotations` in config; SARIF only) emits at most N results per report, severity-ordered, so a code-scanning upload doesn't flood a PR with annotations. The dropped count lands in the SARIF run's `omitted_by_pr_cap` property.
 - **Resource cap** — `resources.maxConcurrentReviews` bounds how many reviews run at once in one process (an MCP server fielding several agents in flight), and `resources.providerCallsPerMinute` is a process-wide sliding-window ceiling on vision-LLM calls (provider quota / spend control; also applies to `flow` reviews, where each `--consistency` sample counts). Both default to unlimited; both are config-only. Note they compose: a review holding a concurrency slot also waits out the rate limiter, so tight values on both multiply latency.
+- **Cost ceiling** — every provider call's token usage is captured and totalled per run (a `Tokens:` line in reports, `token_usage` in SARIF run properties). `--max-tokens N` (or `resources.maxTokensPerRun` in config) sets a per-run token budget: once the running total crosses it, remaining viewports are skipped and the report lists them under `skipped_viewports`. Providers that report no usage still count calls but consume no budget.
 - **Cross-run memory** — every finding gets a stable id (hash of category + element location + normalized issue text). Recurrence detection goes further than exact hashing: category-synonym compatibility plus canonical-token overlap (thresholds calibrated on real cross-run data) matches the same fault even when the vision LLM rewords it between runs. Sightings are recorded per URL in `.motionlint/memory.json`; recurring findings are annotated with *seen in N prior runs* rather than silently dropped. Opt into deltas-only with `--new-only`. To permanently wave off a finding, copy its id into `.motionlintignore` (one hash per line, `#` comments and trailing notes allowed). Disable everything with `--no-memory`.
 
 SARIF output carries the finding id as a `partialFingerprint`, so GitHub code scanning dedups the same finding across runs and PRs natively.

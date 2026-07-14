@@ -1,5 +1,6 @@
 import type { AnalysisResult, VisionProvider } from "../types.js";
 import { parseAnalysisResponse } from "../analysis/parser.js";
+import { usageFromAnthropic } from "../resources/usage.js";
 import { compressForLLM } from "./util.js";
 
 const ANTHROPIC_API = "https://api.anthropic.com/v1/messages";
@@ -59,6 +60,6 @@ export class AnthropicProvider implements VisionProvider {
 
     const json = (await res.json()) as { content?: Array<{ type: string; text?: string }> };
     const text = (json.content ?? []).filter((c) => c.type === "text").map((c) => c.text ?? "").join("\n");
-    return parseAnalysisResponse(text, viewportName);
+    return { ...parseAnalysisResponse(text, viewportName), usage: usageFromAnthropic(json) };
   }
 }

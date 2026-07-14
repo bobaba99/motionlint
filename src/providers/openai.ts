@@ -1,5 +1,6 @@
 import type { AnalysisResult, VisionProvider } from "../types.js";
 import { parseAnalysisResponse } from "../analysis/parser.js";
+import { usageFromOpenAI } from "../resources/usage.js";
 import { compressForLLM } from "./util.js";
 
 const OPENAI_API = "https://api.openai.com/v1/chat/completions";
@@ -58,6 +59,6 @@ export class OpenAIProvider implements VisionProvider {
 
     const json = (await res.json()) as { choices?: Array<{ message?: { content?: string } }> };
     const text = json.choices?.[0]?.message?.content ?? "";
-    return parseAnalysisResponse(text, viewportName);
+    return { ...parseAnalysisResponse(text, viewportName), usage: usageFromOpenAI(json) };
   }
 }

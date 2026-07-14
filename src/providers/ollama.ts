@@ -1,5 +1,6 @@
 import type { AnalysisResult, VisionProvider } from "../types.js";
 import { parseAnalysisResponse } from "../analysis/parser.js";
+import { usageFromOllama } from "../resources/usage.js";
 import { compressForLLM } from "./util.js";
 
 export interface OllamaProviderOptions {
@@ -61,6 +62,6 @@ export class OllamaProvider implements VisionProvider {
     // Some hybrid-architecture models (e.g. nemotron3) emit format:"json"
     // output into the `thinking` channel and leave `response` empty.
     const body = json.response?.trim() ? json.response : (json.thinking ?? "");
-    return parseAnalysisResponse(body, viewportName);
+    return { ...parseAnalysisResponse(body, viewportName), usage: usageFromOllama(json) };
   }
 }

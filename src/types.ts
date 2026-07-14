@@ -69,12 +69,31 @@ export interface UXIssue {
   previously_seen?: number;
 }
 
+/** Tokens consumed by one provider call, normalized across providers. */
+export interface TokenUsage {
+  input_tokens: number;
+  output_tokens: number;
+  total_tokens: number;
+}
+
+/** Token totals for a whole review run, plus budget bookkeeping. */
+export interface RunUsage extends TokenUsage {
+  /** Provider analyze() calls made (counted even when a provider reports no usage). */
+  calls: number;
+  /** Token budget for this run (resources.maxTokensPerRun / --max-tokens). null = unlimited. */
+  limit: number | null;
+  /** Viewports skipped because the budget was exhausted mid-run. */
+  skipped_viewports: string[];
+}
+
 export interface AnalysisResult {
   overall_score: number;
   summary: string;
   issues: UXIssue[];
   strengths: string[];
   viewport: string;
+  /** Tokens the provider reported for this call; absent when the API returned no usage block. */
+  usage?: TokenUsage;
 }
 
 export interface AnalysisEntry {
@@ -103,6 +122,8 @@ export interface ReviewReport {
   warning_count: number;
   suggestion_count: number;
   omitted: OmittedCounts;
+  /** Token accounting for the run (set whenever the pipeline made provider calls). */
+  usage?: RunUsage;
 }
 
 export interface VisionProvider {
@@ -133,6 +154,8 @@ export interface ResourceConfig {
   maxConcurrentReviews: number | null;
   /** Ceiling on vision-provider analyze() calls per minute across the process (quota / spend control). null = unlimited. */
   providerCallsPerMinute: number | null;
+  /** Token budget per review run — once total tokens cross it, remaining viewports are skipped. null = unlimited. */
+  maxTokensPerRun: number | null;
 }
 
 export interface MemoryConfig {

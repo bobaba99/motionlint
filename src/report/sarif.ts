@@ -106,6 +106,7 @@ export function renderSarifReport(report: ReviewReport, opts: SarifRenderOptions
         model: report.model,
         aggregate_score: report.aggregate_score,
         ...(dropped > 0 ? { omitted_by_pr_cap: dropped } : {}),
+        ...(report.usage ? { token_usage: report.usage } : {}),
       },
     }],
   };

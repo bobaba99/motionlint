@@ -1,5 +1,6 @@
 import { relative, isAbsolute } from "node:path";
 import type { ReviewReport, UXIssue, IssueSeverity } from "../types.js";
+import { formatUsageLine } from "../resources/usage.js";
 
 const SEVERITY_ORDER: Record<IssueSeverity, number> = { critical: 0, warning: 1, suggestion: 2 };
 const SEVERITY_LABEL: Record<IssueSeverity, string> = {
@@ -58,6 +59,9 @@ export function renderMarkdownReport(report: ReviewReport, opts: MarkdownOptions
   ].filter(Boolean);
   if (omittedParts.length > 0) {
     lines.push(`- **Omitted:** ${omittedParts.join(" · ")}`);
+  }
+  if (report.usage) {
+    lines.push(`- **Tokens:** ${formatUsageLine(report.usage)}`);
   }
   lines.push("");
 
