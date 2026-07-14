@@ -10,6 +10,11 @@ AI coding agents read JSX, HTML, and CSS — they're blind to what the user actu
 
 MotionLint is a vision-LLM design reviewer that runs in your terminal and as an MCP server inside Claude Code, Cursor, or any MCP-aware client. It captures what your app actually *does* — multi-viewport screenshots, 50ms-interval frame bursts after every interaction, and an interactive timing tuner — then hands ranked, actionable findings back to your coding agent.
 
+<p align="center">
+  <img src="docs/media/cli-audit.gif" width="800" alt="motionlint audit running in a terminal: the demo app's /loading route scores 64/100 with findings across duration, easing and accessibility">
+</p>
+<p align="center"><sub><code>motionlint audit</code> scoring a page — deterministic, no LLM. More demos: clone the repo and open <a href="demo/walkthrough/">demo/walkthrough/index.html</a>.</sub></p>
+
 ## How it's different
 
 | | MotionLint | Visual regression tools (Percy, Chromatic, Playwright snapshots) | AI design generators (v0, Galileo, Claude Design, Stitch) |
@@ -283,6 +288,10 @@ Three ready-to-run sample flows ship in the repo: [flows/signup.json](flows/sign
 
 Most AI coding tools generate animations from scratch. The Tuner lets you **tune the animations that are already running on your page**, in real time, and hand the changes back to your coding agent as a structured prompt.
 
+<p align="center">
+  <img src="docs/media/tuner.gif" width="800" alt="The Animation Tuner: replaying a detected animation, dragging its duration slider from 300ms to 150ms, then applying the ease-out (Emil) preset">
+</p>
+
 ```bash
 motionlint tune http://localhost:3000 --open
 ```
@@ -311,6 +320,10 @@ $ motionlint tune http://localhost:3000
 ## Animation standards — `motionlint audit`
 
 MotionLint encodes [Emil Kowalski's](https://emilkowal.ski/) design-engineering standards as a **deterministic linter** — no vision model, no API key, no cost. `motionlint audit` instruments the page, reads the real timing/easing/transform values every animation is running, and grades them:
+
+<p align="center">
+  <img src="docs/media/audit-report.gif" width="800" alt="The audit HTML report: score ring, then scrolling through findings — each shows what's happening, why it matters, the fix, and current vs suggested easing curves drawn as graphs">
+</p>
 
 | Category | What it catches | The standard |
 | --- | --- | --- |
@@ -405,6 +418,11 @@ MotionLint exits with `1` when critical issues exceed the configured threshold (
 - **Interaction sequences** before capture: `click`, `hover`, `type`, `scroll`, `wait`.
 - **Auth state**: cookies, `localStorage`, and a `beforeNavigate` script — all configurable in `.motionlintrc.json`.
 
+<p align="center">
+  <img src="docs/media/flow-contact-sheet.png" width="800" alt="A flow burst-capture contact sheet: timestamped frames of the signup form animating, laid out in a grid — this is what the vision model reviews">
+</p>
+<p align="center"><sub>A <code>motionlint flow</code> contact sheet — timestamped bursts after each interaction, exactly what the vision model sees.</sub></p>
+
 **Analyzes:** each screenshot is sent to a vision model with an opinionated UX-review system prompt covering twelve dimensions (`hierarchy`, `spacing`, `alignment`, `typography`, `color`, `contrast`, `responsiveness`, `interaction`, `content`, `navigation`, `consistency`, `loading_state`). For each issue the model returns:
 
 ```json
@@ -419,6 +437,12 @@ MotionLint exits with `1` when critical issues exceed the configured threshold (
 ```
 
 Override the prompt with `--rules path/to/your-design-rules.md` to inject project-specific heuristics.
+
+With `--format html` the findings render as a single shareable report — score ring, per-dimension breakdown, and an issue → fix panel per finding with the annotated screenshot:
+
+<p align="center">
+  <img src="docs/media/review-report.gif" width="720" alt="The HTML review report: score ring animates in, then issue-to-fix panels with embedded screenshots scroll past">
+</p>
 
 ## Configuration reference
 
