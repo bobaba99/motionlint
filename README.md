@@ -521,6 +521,13 @@ test/           Node test runner unit + integration tests
 - GitHub Action wrapper (`motionlint-action`).
 - Provider scorecard tracking (per-model regression detection across releases).
 
+## Acknowledgments
+
+MotionLint stands on other people's work:
+
+- **[Emil Kowalski](https://emilkowal.ski/)** — the animation standards behind `motionlint audit`, the tuner's easing presets, and the flow-review rubric are distilled from his design-engineering writing and his [animations.dev](https://animations.dev/) course. His open-source UI libraries — [sonner](https://github.com/emilkowalski/sonner) (toasts) and [vaul](https://github.com/emilkowalski/vaul) (drawers) — are living reference implementations of the motion these rules describe. MotionLint is an independent project, not affiliated with or endorsed by Emil.
+- **[ctx](https://github.com/ctxrs/ctx)** ([ctx.rs](https://ctx.rs)) — local coding-agent history search. We used it while developing the cross-run memory layer to study how findings survive (or vanish) across agent runs; those experiments directly shaped the finding-id and baseline design.
+
 ## License
 
 [MIT](LICENSE) © Resila Technologies Inc.
