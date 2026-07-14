@@ -235,6 +235,129 @@ describe("accessibility (Standard 8)", () => {
   });
 });
 
+describe("stagger rule", () => {
+  let seq = 0;
+  function staggered(id: string, delayMs: number, opts: { name?: string; selectorRoot?: string; durationMs?: number } = {}): DetectedAnimation {
+    const durationMs = opts.durationMs ?? 300;
+    seq += 1;
+    return anim({
+      id,
+      selector: `${opts.selectorRoot ?? "main > ul.list > li.item"}:nth-of-type(${seq})`,
+      common_name: `List item ${id}`,
+      source: "css-keyframes",
+      params: [
+        { name: "duration", label: "Duration", technical: "", min: 50, max: 2000, step: 50, value: durationMs, unit: "ms" },
+        { name: "delay", label: "Delay", technical: "", min: 0, max: 1500, step: 50, value: delayMs, unit: "ms" },
+      ],
+      rawParams: { name: opts.name ?? "riseIn", duration: `${durationMs}ms`, timing: "cubic-bezier(0.23, 1, 0.32, 1)" },
+    });
+  }
+
+  it("stays quiet when the stagger interval is inside the 30-80ms band", () => {
+    const audit = auditAnimations(capture([staggered("a", 0), staggered("b", 40), staggered("c", 80), staggered("d", 120)]));
+    assert.equal(audit.findings.find((f) => /stagger/i.test(f.title)), undefined);
+  });
+
+  it("flags a stagger interval tighter than 30ms", () => {
+    const audit = auditAnimations(capture([staggered("a", 0), staggered("b", 10), staggered("c", 20), staggered("d", 30)]));
+    const f = audit.findings.find((x) => /stagger/i.test(x.title));
+    assert.ok(f, "expected a too-tight stagger finding");
+    assert.equal(f!.category, "cohesion");
+    assert.equal(f!.severity, "suggestion");
+    assert.match(f!.suggested!, /30/);
+  });
+
+  it("flags a stagger interval slower than 80ms", () => {
+    const audit = auditAnimations(capture([staggered("a", 0), staggered("b", 150), staggered("c", 300)]));
+    const f = audit.findings.find((x) => /stagger/i.test(x.title));
+    assert.ok(f, "expected a too-slow stagger finding");
+    assert.match(f!.detail, /150ms/);
+  });
+
+  it("needs at least three group members to call it a stagger", () => {
+    const audit = auditAnimations(capture([staggered("a", 0), staggered("b", 10)]));
+    assert.equal(audit.findings.find((f) => /stagger/i.test(f.title)), undefined);
+  });
+
+  it("ignores groups that share a single delay", () => {
+    const audit = auditAnimations(capture([staggered("a", 100), staggered("b", 100), staggered("c", 100)]));
+    assert.equal(audit.findings.find((f) => /stagger/i.test(f.title)), undefined);
+  });
+
+  it("does not group unrelated components that reuse the same keyframes name", () => {
+    const audit = auditAnimations(capture([
+      staggered("a", 0, { selectorRoot: "div.toast" }),
+      staggered("b", 5, { selectorRoot: "div.modal" }),
+      staggered("c", 10, { selectorRoot: "span.badge" }),
+    ]));
+    assert.equal(audit.findings.find((f) => /stagger/i.test(f.title)), undefined, "different components must not form a stagger group");
+  });
+
+  it("uses a true median so one outlier interval does not misreport the group", () => {
+    // intervals [40, 110] → median 75, inside the band → no finding
+    const audit = auditAnimations(capture([staggered("a", 0), staggered("b", 40), staggered("c", 150)]));
+    assert.equal(audit.findings.find((f) => /stagger/i.test(f.title)), undefined);
+    // intervals [5, 45] → median 25, below the band → fires
+    const audit2 = auditAnimations(capture([staggered("d", 0), staggered("e", 5), staggered("f", 50)]));
+    assert.ok(audit2.findings.find((f) => /stagger/i.test(f.title)), "expected the tight pair to pull the median under 30ms");
+  });
+});
+
+describe("exit-speedup rule", () => {
+  function named(id: string, name: string, durationMs: number, selector = "div.toast"): DetectedAnimation {
+    return anim({
+      id,
+      selector,
+      common_name: name,
+      source: "css-keyframes",
+      params: [{ name: "duration", label: "Duration", technical: "", min: 50, max: 2000, step: 50, value: durationMs, unit: "ms" }],
+      rawParams: { name, duration: `${durationMs}ms`, timing: "cubic-bezier(0.23, 1, 0.32, 1)" },
+    });
+  }
+
+  it("flags an exit that is not faster than its entrance", () => {
+    const audit = auditAnimations(capture([named("in", "fadeIn", 300), named("out", "fadeOut", 300)]));
+    const f = audit.findings.find((x) => /exit/i.test(x.title));
+    assert.ok(f, "expected an exit-speed finding");
+    assert.equal(f!.category, "duration");
+    assert.equal(f!.severity, "suggestion");
+    assert.match(f!.suggested!, /240/);
+    assert.equal(f!.anim_id, "out", "finding anchors on the exit animation");
+  });
+
+  it("stays quiet when the exit already runs ~20% faster", () => {
+    const audit = auditAnimations(capture([named("in", "fadeIn", 300), named("out", "fadeOut", 220)]));
+    assert.equal(audit.findings.find((f) => /exit/i.test(f.title)), undefined);
+  });
+
+  it("pairs kebab-case names like slide-in / slide-out", () => {
+    const audit = auditAnimations(capture([named("in", "slide-in", 250), named("out", "slide-out", 260)]));
+    assert.ok(audit.findings.find((f) => /exit/i.test(f.title)));
+  });
+
+  it("does not pair unrelated names", () => {
+    const audit = auditAnimations(capture([named("in", "fadeIn", 300), named("out", "toastOut", 300)]));
+    assert.equal(audit.findings.find((f) => /exit/i.test(f.title)), undefined);
+  });
+
+  it("does not treat 'loading' as an entrance token", () => {
+    const audit = auditAnimations(capture([named("in", "loading", 300), named("out", "loadOut", 300)]));
+    assert.equal(audit.findings.find((f) => /exit/i.test(f.title)), undefined);
+  });
+
+  it("does not cross-pair unrelated components that share generic fadeIn/fadeOut names", () => {
+    const audit = auditAnimations(capture([
+      named("t-in", "fadeIn", 200, "div.toast"),
+      named("t-out", "fadeOut", 150, "div.toast"),      // healthy pair on the toast
+      named("b-in", "fadeIn", 400, "div.cookie-banner"),
+      named("b-out", "fadeOut", 400, "div.cookie-banner"), // violating pair on the banner
+    ]));
+    const hits = audit.findings.filter((f) => /exit/i.test(f.title));
+    assert.equal(hits.length, 1, "exactly one finding — the banner's own pair");
+    assert.equal(hits[0].anim_id, "b-out");
+  });
+});
+
 function severityValue(s: string): number {
   return s === "critical" ? 0 : s === "warning" ? 1 : 2;
 }

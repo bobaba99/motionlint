@@ -331,7 +331,8 @@ MotionLint encodes [Emil Kowalski's](https://emilkowal.ski/) design-engineering 
 | **Duration** | UI motion over the 300ms ceiling (modals/drawers get 200–500ms) | A 180ms transition feels snappier than a 400ms one; exits ~20% faster |
 | **Physicality** | `scale(0)` entrances | Nothing appears from nothing — start from `scale(0.95)` + `opacity: 0` |
 | **Performance** | `transition: all`, animating layout properties, stray infinite loops | Animate `transform` and `opacity` only — they skip layout/paint |
-| **Cohesion** | Hand-rolled easing-curve sprawl | Curves and durations should live as shared tokens |
+| **Cohesion** | Hand-rolled easing-curve sprawl; stagger intervals outside the 30–80ms band | Curves and durations should live as shared tokens; grouped entrances stagger 30–80ms apart |
+| **Duration (pairs)** | Exits that aren't faster than their entrance (`fadeIn` 300ms / `fadeOut` 300ms) | Exits run ~20% faster than the matching entrance |
 
 ```bash
 motionlint audit http://localhost:3000 --open          # polished HTML report, scored 0–100

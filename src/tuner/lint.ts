@@ -7,7 +7,7 @@
  */
 import type { IssueSeverity } from "../types.js";
 import type { DetectedAnimation, TunerCapture } from "./types.js";
-import { DURATION, EASING_CURVES, SCALE, isEaseIn, isWeakBuiltin } from "./standards.js";
+import { DURATION, EASING_CURVES, SCALE, STAGGER, isEaseIn, isWeakBuiltin } from "./standards.js";
 
 export type AnimationFindingCategory =
   | "easing"
@@ -62,6 +62,32 @@ function rawParams(anim: DetectedAnimation): Record<string, unknown> {
 function durationMs(anim: DetectedAnimation): number | null {
   const p = (anim.params ?? []).find((x) => x.name === "duration");
   return p ? p.value : null;
+}
+
+function delayMs(anim: DetectedAnimation): number | null {
+  const p = (anim.params ?? []).find((x) => x.name === "delay");
+  return p ? p.value : null;
+}
+
+function keyframesName(anim: DetectedAnimation): string | null {
+  const p = rawParams(anim);
+  return typeof p.name === "string" && p.name ? p.name : null;
+}
+
+/**
+ * Selector with sibling indices stripped — `li.item:nth-of-type(3)` and
+ * `li.item:nth-of-type(7)` normalize to the same string, so structural
+ * siblings compare equal while unrelated components stay distinct.
+ */
+function normalizedSelector(anim: DetectedAnimation): string {
+  return anim.selector.replace(/:nth-of-type\(\d+\)/g, "");
+}
+
+/** True median: averages the two middle values for even-length inputs. */
+function medianOf(values: number[]): number {
+  const sorted = [...values].sort((x, y) => x - y);
+  const mid = Math.floor(sorted.length / 2);
+  return sorted.length % 2 ? sorted[mid] : Math.round((sorted[mid - 1] + sorted[mid]) / 2);
 }
 
 function timingFunction(anim: DetectedAnimation): string | null {
@@ -302,6 +328,115 @@ function cohesionFindings(anims: DetectedAnimation[]): AnimationFinding[] {
 }
 
 /**
+ * Stagger choreography check: grouped entrances whose delay intervals fall
+ * outside Emil's 30-80ms band. Groups are animations sharing a source and
+ * signature (keyframes name, or transition property + duration) with distinct
+ * delays — the shape a staggered list renders as.
+ */
+function staggerFindings(anims: DetectedAnimation[]): AnimationFinding[] {
+  const findings: AnimationFinding[] = [];
+  const groups = new Map<string, DetectedAnimation[]>();
+  for (const a of anims) {
+    if (delayMs(a) === null) continue;
+    const signature = keyframesName(a) ?? `${transitionProperty(a) ?? "?"}|${durationMs(a) ?? "?"}`;
+    // The normalized selector keeps the group honest: only structural siblings
+    // (same path modulo :nth-of-type) count as one staggered list — a toast, a
+    // modal and a badge reusing the same `fadeIn` keyframes never group.
+    const key = `${a.source}|${signature}|${normalizedSelector(a)}`;
+    groups.set(key, [...(groups.get(key) ?? []), a]);
+  }
+
+  for (const members of groups.values()) {
+    if (members.length < 3) continue;
+    const delays = [...new Set(members.map((m) => delayMs(m) as number))].sort((x, y) => x - y);
+    if (delays.length < 2) continue;
+    const intervals = delays.slice(1).map((d, i) => d - delays[i]);
+    const median = medianOf(intervals);
+    if (median >= STAGGER.minMs && median <= STAGGER.maxMs) continue;
+
+    const first = members[0];
+    const tooTight = median < STAGGER.minMs;
+    findings.push({
+      anim_id: first.id,
+      selector: `${members.length} elements`,
+      common_name: first.common_name,
+      category: "cohesion",
+      severity: "suggestion",
+      title: tooTight ? "Stagger interval too tight" : "Stagger interval too slow",
+      detail: `${members.length} grouped entrances stagger at ~${median}ms intervals${tooTight ? " — they read as one simultaneous blob" : " — the tail of the group feels like it lags"}.`,
+      why: tooTight
+        ? "Below ~30ms the eye can't separate the items, so the stagger adds delay without adding rhythm."
+        : "Above ~80ms the later items feel disconnected from the first, and the page feels slower than it is.",
+      fix: `Space the delays ${STAGGER.minMs}-${STAGGER.maxMs}ms apart.`,
+      standard: `Stagger grouped entrances ${STAGGER.minMs}-${STAGGER.maxMs}ms apart.`,
+      current: `~${median}ms interval`,
+      suggested: `${STAGGER.minMs}-${STAGGER.maxMs}ms`,
+    });
+  }
+  return findings;
+}
+
+/** Split an animation name into lowercase tokens across camelCase/kebab/snake boundaries. */
+function nameTokens(name: string): string[] {
+  return name
+    .replace(/([a-z0-9])([A-Z])/g, "$1 $2")
+    .split(/[^a-zA-Z0-9]+/)
+    .map((t) => t.toLowerCase())
+    .filter(Boolean);
+}
+
+const EXIT_TOKENS = new Set(["out", "exit", "leave", "close", "hide", "dismiss"]);
+const ENTER_TOKENS = new Set(["in", "enter", "open", "show", "appear", "reveal", "entrance"]);
+
+/**
+ * Exit-speed check: exits should run ~20% faster than their entrance. Pairs are
+ * matched conservatively by keyframes name — `fadeIn`/`fadeOut`, `slide-in`/
+ * `slide-out` — so a lone name never produces a finding.
+ */
+function exitSpeedFindings(anims: DetectedAnimation[]): AnimationFinding[] {
+  const findings: AnimationFinding[] = [];
+  const pairs = new Map<string, { enter?: { anim: DetectedAnimation; name: string; dur: number }; exit?: { anim: DetectedAnimation; name: string; dur: number } }>();
+
+  for (const a of anims) {
+    const name = keyframesName(a);
+    const dur = durationMs(a);
+    if (!name || dur === null) continue;
+    const tokens = nameTokens(name);
+    const role = tokens.some((t) => EXIT_TOKENS.has(t)) ? "exit" : tokens.some((t) => ENTER_TOKENS.has(t)) ? "enter" : null;
+    if (!role) continue;
+    const base = tokens.filter((t) => !EXIT_TOKENS.has(t) && !ENTER_TOKENS.has(t)).join("-");
+    if (!base) continue;
+    // Pair only within one element (same normalized selector) so two unrelated
+    // components sharing generic fadeIn/fadeOut names never get cross-paired.
+    const key = `${base}|${normalizedSelector(a)}`;
+    const entry = pairs.get(key) ?? {};
+    entry[role] ??= { anim: a, name, dur };
+    pairs.set(key, entry);
+  }
+
+  for (const { enter, exit } of pairs.values()) {
+    if (!enter || !exit) continue;
+    const target = Math.round(enter.dur * (1 - DURATION.exitSpeedup));
+    if (exit.dur <= target) continue;
+    findings.push({
+      anim_id: exit.anim.id,
+      selector: exit.anim.selector,
+      common_name: exit.anim.common_name,
+      category: "duration",
+      severity: "suggestion",
+      title: "Exit isn't faster than its entrance",
+      detail: `\`${exit.name}\` runs ${exit.dur}ms while its entrance \`${enter.name}\` runs ${enter.dur}ms.`,
+      why: "Leaving is a decided action — a slow exit makes dismissal feel like it's resisting the user.",
+      fix: `Run exits ~${Math.round(DURATION.exitSpeedup * 100)}% faster than their entrance — try ≤ ${target}ms.`,
+      standard: `Exits run ~${Math.round(DURATION.exitSpeedup * 100)}% faster than the matching entrance.`,
+      current: `${exit.dur}ms`,
+      suggested: `≤ ${target}ms`,
+    });
+  }
+  return findings;
+}
+
+/**
  * Page-level accessibility checks (Emil Standard 8). These read the captured
  * stylesheet text, so they only fire when we actually harvested CSS — with no
  * stylesheet in hand we have no evidence a rule is *absent*, and stay silent
@@ -363,6 +498,8 @@ export function auditAnimations(capture: TunerCapture): AnimationAudit {
   const findings = [
     ...perAnim,
     ...cohesionFindings(capture.animations),
+    ...staggerFindings(capture.animations),
+    ...exitSpeedFindings(capture.animations),
     ...accessibilityFindings(capture),
   ].sort((a, b) => severityRank(a.severity) - severityRank(b.severity));
 
