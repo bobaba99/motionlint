@@ -549,14 +549,19 @@ test/           Node test runner unit + integration tests
 - Auto-interval scan (`--auto-interval`) that picks an inter-frame interval based on the shortest animation detected on the page.
 - SARIF output for GitHub code scanning.
 
+**v0.2 (in progress)** — shipped so far:
+
+- Token accounting + per-run cost ceiling (`--max-tokens` / `resources.maxTokensPerRun`; `Tokens:` line in every report).
+- Auto-discover routes (`--discover-routes`: sitemap.xml + Next.js app directory).
+- Annotated bounding boxes: DOM element refs in the prompt, findings drawn on the screenshot in the HTML report.
+- Interaction-state grids (`--state-grid`: default/hover/focus/active per element, one labeled image).
+- Provider scorecard history with per-model regression detection (`.motionlint/eval-history.json`).
+- Closed-loop prompt evolution from eval `next_actions` (`eval --evolve` → learned heuristics in review prompts).
+- Two new audit rules: stagger-interval band (30–80ms) and exit-~20%-faster-than-entrance.
+
 **v0.2 (next)**:
 
-- Auto-discover routes (Next.js app directory / sitemap.xml).
-- Interaction-state grids (capture hover/focus/loading variants of the same element in one shot).
-- Annotated bounding boxes on screenshots showing where each finding lives.
-- Closed-loop prompt evolution from eval `next_actions` (auto-tune the system prompt across runs).
 - GitHub Action wrapper (`motionlint-action`).
-- Provider scorecard tracking (per-model regression detection across releases).
 
 ## Acknowledgments
 
