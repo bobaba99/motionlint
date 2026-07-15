@@ -1,3 +1,5 @@
+import { dirname, join, resolve, sep } from "node:path";
+
 /**
  * Debounced, coalescing rerun queue for watch mode. File-change events
  * arrive in bursts; at most one run is in flight, and any notifications
@@ -43,4 +45,27 @@ export function createRerunQueue(run: () => Promise<void>, debounceMs = 300): Re
       if (timer) clearTimeout(timer);
     },
   };
+}
+
+/**
+ * True when a watch event should be ignored because it was caused by our
+ * own output (report/json writes inside the watched directory), rather than
+ * a real source change worth rerunning for. Without this, `--watch <dir>`
+ * that overlaps the report's output directory self-triggers forever.
+ */
+export function isOwnOutputEvent(watchDir: string, filename: string | null, ignorePaths: string[]): boolean {
+  if (filename === null) return false;
+
+  // Any path segment named .motionlint is our own scratch/report directory,
+  // regardless of which specific output paths were configured.
+  if (filename.split(sep).includes(".motionlint")) return true;
+
+  const resolvedEvent = resolve(join(watchDir, filename));
+  for (const raw of ignorePaths) {
+    const ignorePath = resolve(raw);
+    if (resolvedEvent === ignorePath) return true;
+    const ignoreDir = dirname(ignorePath);
+    if (resolvedEvent === ignoreDir || resolvedEvent.startsWith(ignoreDir + sep)) return true;
+  }
+  return false;
 }

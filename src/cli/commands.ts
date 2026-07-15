@@ -411,8 +411,14 @@ async function runAuditCommand(url: string, opts: AuditCliOptions): Promise<void
   if (opts.ci) console.error(kleur.yellow("  --ci is ignored in watch mode."));
 
   const { watch } = await import("node:fs");
-  const { createRerunQueue } = await import("./watch.js");
+  const { createRerunQueue, isOwnOutputEvent } = await import("./watch.js");
   const dir = typeof opts.watch === "string" ? opts.watch : process.cwd();
+
+  // Our own report writes (below) land inside `dir` by default (cwd), so the
+  // watcher must recognize and ignore them — otherwise every rerun retriggers
+  // itself forever, each one launching headless Chromium.
+  const ignorePaths = [resolvePath(opts.output ?? ".motionlint/audit/index.html")];
+  if (opts.json) ignorePaths.push(resolvePath(opts.json));
 
   let lastScore: number | null = null;
   const timestamp = () => new Date().toTimeString().slice(0, 8);
@@ -425,7 +431,9 @@ async function runAuditCommand(url: string, opts: AuditCliOptions): Promise<void
 
   await runAndReport();
   const queue = createRerunQueue(runAndReport, 300);
-  const watcher = watch(dir, { recursive: true }, () => queue.notify());
+  const watcher = watch(dir, { recursive: true }, (_event, filename) => {
+    if (!isOwnOutputEvent(dir, filename, ignorePaths)) queue.notify();
+  });
   console.error(kleur.gray(`  watching ${dir} — Ctrl-C to stop`));
   await new Promise<void>((resolveDone) => {
     process.once("SIGINT", () => {

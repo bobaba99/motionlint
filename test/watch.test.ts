@@ -1,6 +1,6 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
-import { createRerunQueue } from "../src/cli/watch.js";
+import { createRerunQueue, isOwnOutputEvent } from "../src/cli/watch.js";
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
@@ -32,5 +32,23 @@ describe("createRerunQueue", () => {
     q.notify();
     await sleep(50);
     assert.equal(runs, 0);
+  });
+});
+
+describe("isOwnOutputEvent", () => {
+  it("flags a change under a .motionlint directory as our own output", () => {
+    assert.equal(isOwnOutputEvent("/w", ".motionlint/audit/index.html", []), true);
+  });
+
+  it("flags a change matching a resolved ignore path", () => {
+    assert.equal(isOwnOutputEvent("/w", "out/report.html", ["/w/out/report.html"]), true);
+  });
+
+  it("does not flag unrelated source changes", () => {
+    assert.equal(isOwnOutputEvent("/w", "src/app.css", ["/w/out/report.html"]), false);
+  });
+
+  it("treats a null filename (rare platforms) as not our own", () => {
+    assert.equal(isOwnOutputEvent("/w", null, ["/w/out/report.html"]), false);
   });
 });
