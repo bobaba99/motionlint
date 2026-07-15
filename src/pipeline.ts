@@ -193,6 +193,7 @@ export async function runReview(opts: RunReviewOptions): Promise<RunReviewResult
         waitFor: config.waitFor,
         waitTimeout: config.waitTimeout,
         auth: config.auth,
+        interactions: opts.interactions,
       });
       const strip = await composeLabeledStrip([
         { label: "current", png: current.screenshot },
@@ -239,6 +240,7 @@ export async function runReview(opts: RunReviewOptions): Promise<RunReviewResult
           waitFor: config.waitFor,
           waitTimeout: config.waitTimeout,
           auth: config.auth,
+          interactions: opts.interactions,
           colorScheme: "dark",
         });
         const panels = [
@@ -253,6 +255,7 @@ export async function runReview(opts: RunReviewOptions): Promise<RunReviewResult
             waitFor: config.waitFor,
             waitTimeout: config.waitTimeout,
             auth: config.auth,
+            interactions: opts.interactions,
             forcedColors: true,
           });
           panels.push({ label: "forced colors", png: forced.screenshot });
