@@ -30,6 +30,10 @@ export interface CaptureOptions {
   auth?: AuthConfig;
   /** Also capture a DOM snapshot (element refs + measurements) alongside the screenshot. */
   withDom?: boolean;
+  /** Emulated prefers-color-scheme for the capture context. */
+  colorScheme?: "light" | "dark";
+  /** Emulate forced-colors: active (Windows High Contrast). */
+  forcedColors?: boolean;
 }
 
 export interface CaptureResult {

@@ -12,6 +12,8 @@ export interface BrowserSessionOptions {
   videoDir?: string;
   record?: boolean;
   auth?: AuthConfig;
+  colorScheme?: "light" | "dark";
+  forcedColors?: boolean;
 }
 
 /**
@@ -47,6 +49,8 @@ export async function launchBrowserSession(opts: BrowserSessionOptions): Promise
     recordVideo: opts.record && opts.videoDir
       ? { dir: opts.videoDir, size: { width: opts.viewport.width, height: opts.viewport.height } }
       : undefined,
+    colorScheme: opts.colorScheme,
+    forcedColors: opts.forcedColors ? "active" : undefined,
   });
 
   if (opts.auth?.cookies?.length) {

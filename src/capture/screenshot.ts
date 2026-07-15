@@ -51,6 +51,8 @@ export async function captureScreenshot(opts: CaptureOptions): Promise<CaptureRe
     record: opts.record,
     videoDir: opts.videoDir,
     auth: opts.auth,
+    colorScheme: opts.colorScheme,
+    forcedColors: opts.forcedColors,
   });
 
   const page = await session.context.newPage();
