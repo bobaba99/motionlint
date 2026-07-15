@@ -146,3 +146,33 @@ export async function discoverRoutes(opts: DiscoverRoutesOptions): Promise<strin
   unique.sort((a, b) => (a === "/" ? -1 : b === "/" ? 1 : a.localeCompare(b)));
   return unique.slice(0, limit);
 }
+
+/** One Storybook story from /index.json (v7/v8 "entries" shape). */
+interface StorybookEntry {
+  id: string;
+  type?: string;
+}
+
+/**
+ * Discover Storybook stories via the static index (`/index.json`, Storybook 7+).
+ * Returns iframe paths reviewable as plain routes. Best-effort: any failure → [].
+ */
+export async function discoverStorybookStories(
+  baseUrl: string,
+  opts: { fetchImpl?: typeof fetch; limit?: number } = {},
+): Promise<string[]> {
+  const fetchImpl = opts.fetchImpl ?? fetch;
+  const limit = opts.limit ?? 20;
+  try {
+    const res = await fetchImpl(new URL("/index.json", baseUrl).toString());
+    if (!res.ok) return [];
+    const json = (await res.json()) as { entries?: Record<string, StorybookEntry> };
+    if (!json.entries) return [];
+    return Object.values(json.entries)
+      .filter((e) => e.type === "story" && typeof e.id === "string")
+      .map((e) => `/iframe.html?id=${encodeURIComponent(e.id)}&viewMode=story`)
+      .slice(0, limit);
+  } catch {
+    return [];
+  }
+}

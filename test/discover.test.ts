@@ -7,6 +7,7 @@ import {
   discoverNextAppRoutes,
   discoverRoutes,
   discoverRoutesFromSitemap,
+  discoverStorybookStories,
   parseSitemapXml,
 } from "../src/capture/discover.js";
 
@@ -117,5 +118,37 @@ describe("discoverRoutes", () => {
     } finally {
       await rm(dir, { recursive: true, force: true });
     }
+  });
+});
+
+describe("discoverStorybookStories", () => {
+  const indexJson = {
+    v: 5,
+    entries: {
+      "button--primary": { id: "button--primary", title: "Button", name: "Primary", type: "story" },
+      "button--docs": { id: "button--docs", title: "Button", name: "Docs", type: "docs" },
+      "card--default": { id: "card--default", title: "Card", name: "Default", type: "story" },
+    },
+  };
+  const fetchOk = (async () => ({ ok: true, json: async () => indexJson })) as unknown as typeof fetch;
+
+  it("returns iframe paths for story entries only, docs excluded", async () => {
+    const stories = await discoverStorybookStories("http://localhost:6006", { fetchImpl: fetchOk });
+    assert.deepEqual(stories, [
+      "/iframe.html?id=button--primary&viewMode=story",
+      "/iframe.html?id=card--default&viewMode=story",
+    ]);
+  });
+
+  it("caps the list", async () => {
+    const stories = await discoverStorybookStories("http://localhost:6006", { fetchImpl: fetchOk, limit: 1 });
+    assert.equal(stories.length, 1);
+  });
+
+  it("returns [] on fetch failure or malformed payload", async () => {
+    const fetch404 = (async () => ({ ok: false })) as unknown as typeof fetch;
+    assert.deepEqual(await discoverStorybookStories("http://localhost:6006", { fetchImpl: fetch404 }), []);
+    const fetchJunk = (async () => ({ ok: true, json: async () => ({ nope: 1 }) })) as unknown as typeof fetch;
+    assert.deepEqual(await discoverStorybookStories("http://localhost:6006", { fetchImpl: fetchJunk }), []);
   });
 });
