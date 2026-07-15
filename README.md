@@ -80,6 +80,9 @@ motionlint review http://localhost:3000 --provider anthropic --model claude-sonn
 # Agent focus — keep only the top 5 findings, and only ones not seen in prior runs.
 motionlint review http://localhost:3000 --max-findings 5 --new-only
 
+# Before/after comparison — PR preview vs. production baseline.
+motionlint review https://pr-123.preview.example.com --against https://prod.example.com
+
 # Reviewer focus — cap the SARIF upload at 10 annotations per report.
 motionlint review https://staging.acme.dev --format sarif -o ux.sarif --max-pr-annotations 10
 ```
