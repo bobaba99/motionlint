@@ -122,6 +122,8 @@ export interface OmittedCounts {
 export interface ReviewReport {
   timestamp: string;
   url: string;
+  /** Baseline URL when the run was a before/after comparison (--against). */
+  against?: string;
   provider: string;
   model: string;
   analyses: AnalysisEntry[];

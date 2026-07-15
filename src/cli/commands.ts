@@ -44,6 +44,7 @@ export function buildProgram(): Command {
     .option("--no-full-page", "Capture only the viewport (above-the-fold), not full page.")
     .option("--interactions <spec>", "Path to a file or inline JSON with interaction steps.")
     .option("--state-grid", "Also capture an interaction-state grid (default/hover/focus/active per element) and review it.", false)
+    .option("--against <url>", "Compare against a baseline URL (e.g. production): reviews CURRENT vs BASELINE side by side and reports only differences.")
     .option("--ci", "Exit with non-zero code if issues exceed the configured threshold.", false)
     .option("--threshold <severity>", `CI severity threshold: ${VALID_SEVERITIES.join("|")}.`)
     .option("--max-findings <n>", "Keep only the top N findings per run, severity-ordered (agent focus).")
@@ -550,6 +551,7 @@ interface ReviewOptions {
   fullPage?: boolean;
   interactions?: string;
   stateGrid?: boolean;
+  against?: string;
   ci?: boolean;
   threshold?: string;
   maxFindings?: string;
@@ -636,6 +638,7 @@ async function runReviewCommand(rawUrl: string, opts: ReviewOptions): Promise<vo
       fullPage: opts.fullPage ?? true,
       interactions,
       stateGrid: opts.stateGrid ?? false,
+      againstUrl: opts.against ?? null,
       format,
       outputPath: opts.output === false ? null : opts.output ?? undefined,
       embedScreenshots: opts.embed ?? false,

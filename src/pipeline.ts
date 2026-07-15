@@ -56,6 +56,8 @@ export interface RunReviewOptions {
   maxTokens?: number | null;
   /** Also capture an interaction-state grid (hover/focus/active per element) and review it. */
   stateGrid?: boolean;
+  /** Compare against this baseline URL: each viewport analyzes a CURRENT|BASELINE strip instead of a plain capture. */
+  againstUrl?: string | null;
   onProgress?: (event: ProgressEvent) => void;
 }
 
@@ -171,6 +173,37 @@ export async function runReview(opts: RunReviewOptions): Promise<RunReviewResult
     }
   }
 
+  // Before/after comparison: swap each per-viewport capture for a labeled
+  // CURRENT|BASELINE strip. Same analyze-call count as a plain review; DOM
+  // refs are dropped because composite coordinates don't map to the page.
+  const comparing = Boolean(opts.againstUrl);
+  if (opts.againstUrl) {
+    const { composeLabeledStrip } = await import("./capture/pair.js");
+    for (let i = 0; i < captures.length; i++) {
+      const current = captures[i];
+      if (current.viewport.name === "interaction-states") continue;
+      const baseline = await captureScreenshot({
+        url: opts.againstUrl,
+        viewport: current.viewport,
+        fullPage: opts.fullPage ?? true,
+        waitFor: config.waitFor,
+        waitTimeout: config.waitTimeout,
+        auth: config.auth,
+      });
+      const strip = await composeLabeledStrip([
+        { label: "current", png: current.screenshot },
+        { label: "baseline", png: baseline.screenshot },
+      ]);
+      captures[i] = {
+        ...current,
+        screenshot: strip,
+        fullPage: false,
+        dom: undefined,
+        viewport: { ...current.viewport, name: `${current.viewport.name}-vs-baseline` },
+      };
+    }
+  }
+
   const tokenLimit = opts.maxTokens !== undefined ? opts.maxTokens : config.resources.maxTokensPerRun;
   let usage = emptyRunUsage(typeof tokenLimit === "number" && tokenLimit > 0 ? tokenLimit : null);
 
@@ -194,6 +227,7 @@ export async function runReview(opts: RunReviewOptions): Promise<RunReviewResult
       elements: capture.dom?.elements,
       learned,
       ...(isGrid ? { stateGrid: { states: GRID_STATES, elements: gridElements as string[] } } : {}),
+      ...(comparing ? { compare: { baselineUrl: opts.againstUrl as string } } : {}),
     });
     const analysis = resolveElementRefs(
       await provider.analyze(capture.screenshot, prompt, capture.viewport.name),
@@ -247,11 +281,14 @@ export async function runReview(opts: RunReviewOptions): Promise<RunReviewResult
     memoryOmitted = { by_baseline: filtered.by_baseline, by_memory: filtered.by_memory };
   }
 
-  const report = aggregate(url, provider.name, provider.model, reportAnalyses, {
-    maxFindings: opts.maxFindings !== undefined ? opts.maxFindings : config.maxFindings,
-    omitted: memoryOmitted,
-    usage,
-  });
+  const report: ReviewReport = {
+    ...aggregate(url, provider.name, provider.model, reportAnalyses, {
+      maxFindings: opts.maxFindings !== undefined ? opts.maxFindings : config.maxFindings,
+      omitted: memoryOmitted,
+      usage,
+    }),
+    ...(opts.againstUrl ? { against: opts.againstUrl } : {}),
+  };
 
   const format: OutputFormat = opts.format ?? "md";
   let rendered: string;
