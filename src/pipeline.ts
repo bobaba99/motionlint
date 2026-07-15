@@ -277,6 +277,15 @@ export async function runReview(opts: RunReviewOptions): Promise<RunReviewResult
       }
     }
   }
+  if (opts.schemes && opts.againstUrl && schemeNames.size === 0) {
+    // The comparison block above already replaced every per-viewport capture
+    // with a CURRENT|BASELINE strip, so there was nothing left for the scheme
+    // sweep to pair against — flag it rather than silently doing nothing.
+    onProgress?.({
+      type: "memory_warning",
+      message: "--schemes is skipped when --against is active (comparison replaces the per-viewport captures)",
+    });
+  }
 
   const tokenLimit = opts.maxTokens !== undefined ? opts.maxTokens : config.resources.maxTokensPerRun;
   let usage = emptyRunUsage(typeof tokenLimit === "number" && tokenLimit > 0 ? tokenLimit : null);
