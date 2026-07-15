@@ -340,7 +340,7 @@ async function runAuditCommand(url: string, opts: AuditCliOptions): Promise<void
   // reruns don't need to thread it through the return value).
   let lastCriticalCount = 0;
 
-  const runOnce = async (): Promise<number> => {
+  const runOnce = async (allowOpen: boolean): Promise<number> => {
     if (!opts.quiet) console.error(kleur.cyan(`→ Auditing animations on ${url}…`));
     const capture = await extractAnimations({
       url,
@@ -392,7 +392,7 @@ async function runAuditCommand(url: string, opts: AuditCliOptions): Promise<void
       console.error(kleur.green(`  json   → ${opts.json}`));
     }
 
-    if (opts.open) {
+    if (opts.open && allowOpen) {
       const { spawn } = await import("node:child_process");
       const opener = process.platform === "darwin" ? "open" : process.platform === "win32" ? "start" : "xdg-open";
       spawn(opener, [outPath], { detached: true, stdio: "ignore" }).unref();
@@ -403,7 +403,7 @@ async function runAuditCommand(url: string, opts: AuditCliOptions): Promise<void
   };
 
   if (opts.watch === undefined || opts.watch === false) {
-    await runOnce();
+    await runOnce(true);
     if (opts.ci && lastCriticalCount > 0) process.exit(1);
     return;
   }
@@ -421,19 +421,33 @@ async function runAuditCommand(url: string, opts: AuditCliOptions): Promise<void
   if (opts.json) ignorePaths.push(resolvePath(opts.json));
 
   let lastScore: number | null = null;
+  let isFirstRun = true;
   const timestamp = () => new Date().toTimeString().slice(0, 8);
   const runAndReport = async (): Promise<void> => {
-    const score = await runOnce();
-    const delta = lastScore === null ? "" : ` (Δ ${score - lastScore >= 0 ? "+" : ""}${score - lastScore})`;
-    console.error(kleur.cyan(`[${timestamp()}] audit ${score}/100${delta}`));
-    lastScore = score;
+    const allowOpen = isFirstRun;
+    isFirstRun = false;
+    try {
+      const score = await runOnce(allowOpen);
+      const delta = lastScore === null ? "" : ` (Δ ${score - lastScore >= 0 ? "+" : ""}${score - lastScore})`;
+      console.error(kleur.cyan(`[${timestamp()}] audit ${score}/100${delta}`));
+      lastScore = score;
+    } catch (err) {
+      // A failed rerun must not kill the watch loop — report it and keep watching.
+      console.error(kleur.red(`[${timestamp()}] audit failed: ${(err as Error).message}`));
+    }
   };
 
   await runAndReport();
   const queue = createRerunQueue(runAndReport, 300);
-  const watcher = watch(dir, { recursive: true }, (_event, filename) => {
-    if (!isOwnOutputEvent(dir, filename, ignorePaths)) queue.notify();
-  });
+  let watcher: import("node:fs").FSWatcher;
+  try {
+    watcher = watch(dir, { recursive: true }, (_event, filename) => {
+      if (!isOwnOutputEvent(dir, filename, ignorePaths)) queue.notify();
+    });
+  } catch (err) {
+    console.error(kleur.red(`--watch needs recursive fs.watch (macOS, Windows, or Linux with Node 20+): ${(err as Error).message}`));
+    process.exit(1);
+  }
   console.error(kleur.gray(`  watching ${dir} — Ctrl-C to stop`));
   await new Promise<void>((resolveDone) => {
     process.once("SIGINT", () => {

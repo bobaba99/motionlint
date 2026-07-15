@@ -359,7 +359,7 @@ motionlint audit http://localhost:3000 --json audit.json --ci   # machine-readab
 
 Add `--layout` to also lint layout (tap targets, text size, contrast, overflow) from live DOM measurements — still deterministic, still no API key.
 
-Add `--watch [dir]` to re-run the audit on file changes under `[dir]` (default: cwd) and print the score with a delta after each run — a live readout while you iterate.
+Add `--watch [dir]` to re-run the audit on file changes under `[dir]` (default: cwd) and print the score with a delta after each run — a live readout while you iterate. Recursive watching requires macOS, Windows, or Linux with Node 20+.
 
 The report pairs every finding with a **before → after** panel; easing findings render a live cubic-bezier curve comparison so the fix is visible, not just described. The same standards feed the `flow` review prompt (so vision findings cite concrete rules) and appear inline in the Animation Tuner.
 
