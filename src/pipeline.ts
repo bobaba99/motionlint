@@ -194,9 +194,25 @@ export async function runReview(opts: RunReviewOptions): Promise<RunReviewResult
         { label: "current", png: current.screenshot },
         { label: "baseline", png: baseline.screenshot },
       ]);
+      let screenshotPath = current.screenshotPath;
+      if (screenshotPath) {
+        const stripPath = screenshotPath.replace(/\.png$/, "") + "-vs-baseline.png";
+        try {
+          await writeFile(stripPath, strip);
+          screenshotPath = stripPath;
+        } catch (err) {
+          // The strip write is a report-linking convenience, not the analysis
+          // itself (the in-memory buffer is what gets analyzed either way).
+          // Drop the link rather than fail the run or point at the stale
+          // pre-transform image.
+          onProgress?.({ type: "memory_warning", message: `comparison strip write failed: ${(err as Error).message}` });
+          screenshotPath = undefined;
+        }
+      }
       captures[i] = {
         ...current,
         screenshot: strip,
+        screenshotPath,
         fullPage: false,
         dom: undefined,
         viewport: { ...current.viewport, name: `${current.viewport.name}-vs-baseline` },
@@ -227,7 +243,9 @@ export async function runReview(opts: RunReviewOptions): Promise<RunReviewResult
       elements: capture.dom?.elements,
       learned,
       ...(isGrid ? { stateGrid: { states: GRID_STATES, elements: gridElements as string[] } } : {}),
-      ...(comparing ? { compare: { baselineUrl: opts.againstUrl as string } } : {}),
+      ...(comparing && capture.viewport.name.endsWith("-vs-baseline")
+        ? { compare: { baselineUrl: opts.againstUrl as string } }
+        : {}),
     });
     const analysis = resolveElementRefs(
       await provider.analyze(capture.screenshot, prompt, capture.viewport.name),
