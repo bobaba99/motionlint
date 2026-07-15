@@ -72,6 +72,10 @@ export interface PromptOptions {
   stateGrid?: { states: readonly string[]; elements: string[] };
   /** Learned heuristics distilled from eval misses (bullet lines), carried into the rubric. */
   learned?: string | null;
+  /** Before/after comparison mode — the image is CURRENT | BASELINE side by side. */
+  compare?: { baselineUrl: string };
+  /** Color-scheme sweep mode — the image shows the same page under multiple schemes. */
+  schemePair?: { schemes: string[] };
 }
 
 export async function buildPrompt(opts: PromptOptions): Promise<string> {
@@ -121,6 +125,28 @@ export async function buildPrompt(opts: PromptOptions): Promise<string> {
       `Judge ONLY interaction affordances by comparing columns within each row: does hover give visible feedback, is the focus ring clearly visible (WCAG 2.4.7), does active/pressed state respond, are the states distinguishable from each other and from default? ` +
       `Report findings under the "interaction" category (or "contrast" for low-visibility focus indicators), naming the element row in the location field. ` +
       `Ignore layout/typography/spacing dimensions — the grid's own chrome is not the subject.`,
+    );
+  }
+
+  if (opts.compare) {
+    parts.push(
+      `\n\n## Comparison mode\n` +
+      `This image shows TWO captures of the same page side by side, each under a labeled bar: ` +
+      `LEFT is the CURRENT build under review; RIGHT is the BASELINE (${opts.compare.baselineUrl}). ` +
+      `Report only differences between the two. Regressions the current build introduces are issues ` +
+      `(location must name the affected region, prefixed "[current]"). Improvements belong in strengths. ` +
+      `If the two sides are visually identical, return an empty issues array and say so in the summary.`,
+    );
+  }
+
+  if (opts.schemePair) {
+    parts.push(
+      `\n\n## Color-scheme sweep\n` +
+      `This image shows the SAME page rendered under different color schemes (${opts.schemePair.schemes.join(" / ")}), ` +
+      `each under a labeled bar. Judge each non-light rendering on its own merits AND against the light rendering: ` +
+      `unreadable or low-contrast text, hardcoded light backgrounds or images that ignore prefers-color-scheme, ` +
+      `borders/dividers that vanish, unstyled form controls, illegible logos or icons. ` +
+      `Prefix each issue's location with the scheme it appears in, e.g. "[dark]".`,
     );
   }
 
