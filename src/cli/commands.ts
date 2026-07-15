@@ -151,6 +151,7 @@ export function buildProgram(): Command {
     .option("--open", "Open the generated report in the default browser.", false)
     .option("--ci", "Exit non-zero if any critical finding is reported.", false)
     .option("--quiet", "Suppress progress output.", false)
+    .option("--watch [dir]", "Re-run the audit when files under [dir] (default: cwd) change; prints score deltas until Ctrl-C.")
     .action(async (url: string, opts: AuditCliOptions) => {
       try {
         await runAuditCommand(url, opts);
@@ -321,6 +322,7 @@ interface AuditCliOptions {
   open?: boolean;
   ci?: boolean;
   quiet?: boolean;
+  watch?: string | boolean;
 }
 
 async function runAuditCommand(url: string, opts: AuditCliOptions): Promise<void> {
@@ -333,64 +335,105 @@ async function runAuditCommand(url: string, opts: AuditCliOptions): Promise<void
   const [w, h] = (opts.viewport ?? "1280x800").split("x").map(Number);
   const settle = Number(opts.settle ?? 1500);
 
-  if (!opts.quiet) console.error(kleur.cyan(`→ Auditing animations on ${url}…`));
-  const capture = await extractAnimations({
-    url,
-    viewport: { width: w || 1280, height: h || 800 },
-    settleMs: settle,
-  });
-  const audit = auditAnimations(capture);
+  // Tracks the combined critical count from the most recent run, for the
+  // --ci exit check below (kept outside runOnce so watch mode's repeated
+  // reruns don't need to thread it through the return value).
+  let lastCriticalCount = 0;
 
-  let layout: import("../lint/layout.js").LayoutAudit | undefined;
-  if (opts.layout) {
-    const { captureScreenshot } = await import("../capture/screenshot.js");
-    const { auditLayout } = await import("../lint/layout.js");
-    if (!opts.quiet) console.error(kleur.cyan(`→ Measuring layout…`));
-    const cap = await captureScreenshot({
+  const runOnce = async (): Promise<number> => {
+    if (!opts.quiet) console.error(kleur.cyan(`→ Auditing animations on ${url}…`));
+    const capture = await extractAnimations({
       url,
-      viewport: { name: "audit", width: w || 1280, height: h || 800 },
-      fullPage: true,
-      withDom: true,
+      viewport: { width: w || 1280, height: h || 800 },
+      settleMs: settle,
     });
-    if (cap.dom) {
-      layout = auditLayout(cap.dom);
-      if (!opts.quiet) console.error(kleur.gray(`  layout score ${layout.score}/100 · ${layout.findings.length} finding(s)`));
+    const audit = auditAnimations(capture);
+
+    let layout: import("../lint/layout.js").LayoutAudit | undefined;
+    if (opts.layout) {
+      const { captureScreenshot } = await import("../capture/screenshot.js");
+      const { auditLayout } = await import("../lint/layout.js");
+      if (!opts.quiet) console.error(kleur.cyan(`→ Measuring layout…`));
+      const cap = await captureScreenshot({
+        url,
+        viewport: { name: "audit", width: w || 1280, height: h || 800 },
+        fullPage: true,
+        withDom: true,
+      });
+      if (cap.dom) {
+        layout = auditLayout(cap.dom);
+        if (!opts.quiet) console.error(kleur.gray(`  layout score ${layout.score}/100 · ${layout.findings.length} finding(s)`));
+      }
     }
-  }
 
-  if (!opts.quiet) {
-    console.error(kleur.gray(`  measured ${audit.total_animations} animation(s)`));
-    const sev = (n: number, label: string, color: (s: string) => string) => (n > 0 ? color(`${n} ${label}`) : kleur.gray(`0 ${label}`));
-    console.error(
-      `  ${sev(audit.critical_count, "critical", kleur.red)} · ${sev(audit.warning_count, "warning", kleur.yellow)} · ${sev(audit.suggestion_count, "suggestion", kleur.gray)} · score ${audit.score}/100`,
-    );
-    for (const f of audit.findings.slice(0, 12)) {
-      const mark = f.severity === "critical" ? kleur.red("✗") : f.severity === "warning" ? kleur.yellow("▲") : kleur.gray("•");
-      console.error(`    ${mark} [${f.category}] ${f.title} — ${kleur.dim(f.common_name)}`);
+    if (!opts.quiet) {
+      console.error(kleur.gray(`  measured ${audit.total_animations} animation(s)`));
+      const sev = (n: number, label: string, color: (s: string) => string) => (n > 0 ? color(`${n} ${label}`) : kleur.gray(`0 ${label}`));
+      console.error(
+        `  ${sev(audit.critical_count, "critical", kleur.red)} · ${sev(audit.warning_count, "warning", kleur.yellow)} · ${sev(audit.suggestion_count, "suggestion", kleur.gray)} · score ${audit.score}/100`,
+      );
+      for (const f of audit.findings.slice(0, 12)) {
+        const mark = f.severity === "critical" ? kleur.red("✗") : f.severity === "warning" ? kleur.yellow("▲") : kleur.gray("•");
+        console.error(`    ${mark} [${f.category}] ${f.title} — ${kleur.dim(f.common_name)}`);
+      }
+      if (audit.findings.length > 12) console.error(kleur.dim(`    …and ${audit.findings.length - 12} more (see the report)`));
     }
-    if (audit.findings.length > 12) console.error(kleur.dim(`    …and ${audit.findings.length - 12} more (see the report)`));
+
+    const outPath = resolvePath(opts.output ?? ".motionlint/audit/index.html");
+    await mkdir(dirname(outPath), { recursive: true });
+    await writeFile(outPath, renderAnimationAuditHtml(audit, layout), "utf8");
+    console.error(kleur.green(`  report → ${outPath}`));
+    console.error(kleur.gray(`  open with: file://${outPath}`));
+
+    if (opts.json) {
+      await mkdir(dirname(resolvePath(opts.json)), { recursive: true });
+      const jsonPayload = layout ? { ...audit, layout } : audit;
+      await writeFile(resolvePath(opts.json), JSON.stringify(jsonPayload, null, 2), "utf8");
+      console.error(kleur.green(`  json   → ${opts.json}`));
+    }
+
+    if (opts.open) {
+      const { spawn } = await import("node:child_process");
+      const opener = process.platform === "darwin" ? "open" : process.platform === "win32" ? "start" : "xdg-open";
+      spawn(opener, [outPath], { detached: true, stdio: "ignore" }).unref();
+    }
+
+    lastCriticalCount = audit.critical_count + (layout?.critical_count ?? 0);
+    return audit.score;
+  };
+
+  if (opts.watch === undefined || opts.watch === false) {
+    await runOnce();
+    if (opts.ci && lastCriticalCount > 0) process.exit(1);
+    return;
   }
 
-  const outPath = resolvePath(opts.output ?? ".motionlint/audit/index.html");
-  await mkdir(dirname(outPath), { recursive: true });
-  await writeFile(outPath, renderAnimationAuditHtml(audit, layout), "utf8");
-  console.error(kleur.green(`  report → ${outPath}`));
-  console.error(kleur.gray(`  open with: file://${outPath}`));
+  if (opts.ci) console.error(kleur.yellow("  --ci is ignored in watch mode."));
 
-  if (opts.json) {
-    await mkdir(dirname(resolvePath(opts.json)), { recursive: true });
-    const jsonPayload = layout ? { ...audit, layout } : audit;
-    await writeFile(resolvePath(opts.json), JSON.stringify(jsonPayload, null, 2), "utf8");
-    console.error(kleur.green(`  json   → ${opts.json}`));
-  }
+  const { watch } = await import("node:fs");
+  const { createRerunQueue } = await import("./watch.js");
+  const dir = typeof opts.watch === "string" ? opts.watch : process.cwd();
 
-  if (opts.open) {
-    const { spawn } = await import("node:child_process");
-    const opener = process.platform === "darwin" ? "open" : process.platform === "win32" ? "start" : "xdg-open";
-    spawn(opener, [outPath], { detached: true, stdio: "ignore" }).unref();
-  }
+  let lastScore: number | null = null;
+  const timestamp = () => new Date().toTimeString().slice(0, 8);
+  const runAndReport = async (): Promise<void> => {
+    const score = await runOnce();
+    const delta = lastScore === null ? "" : ` (Δ ${score - lastScore >= 0 ? "+" : ""}${score - lastScore})`;
+    console.error(kleur.cyan(`[${timestamp()}] audit ${score}/100${delta}`));
+    lastScore = score;
+  };
 
-  if (opts.ci && audit.critical_count + (layout?.critical_count ?? 0) > 0) process.exit(1);
+  await runAndReport();
+  const queue = createRerunQueue(runAndReport, 300);
+  const watcher = watch(dir, { recursive: true }, () => queue.notify());
+  console.error(kleur.gray(`  watching ${dir} — Ctrl-C to stop`));
+  await new Promise<void>((resolveDone) => {
+    process.once("SIGINT", () => {
+      queue.stop();
+      watcher.close();
+      resolveDone();
+    });
+  });
 }
 
 interface EvalCliOptions {

@@ -11,6 +11,7 @@ All notable changes to MotionLint will be documented here. Format follows [Keep 
 - **Before/after review** — `review --against <baseline-url>` captures both URLs per viewport, composes a labeled CURRENT|BASELINE strip, and asks the model for *differences only*: regressions come back as issues, improvements as strengths, identical pages as a clean report. Same provider-call count as a plain review.
 - **Color-scheme sweep** — `review --schemes` re-captures every viewport under `prefers-color-scheme: dark`, composes a labeled light|dark strip, and reviews it for scheme-specific defects (unreadable text, hardcoded light surfaces, vanishing borders, unstyled controls). `--forced-colors` adds a Windows High Contrast panel.
 - **Storybook mode** — `review --storybook` discovers stories from Storybook's /index.json and reviews each story iframe as its own route (memory, caps, and SARIF all apply per story).
+- **Watch mode** — `audit --watch [dir]` re-runs the audit on file changes (debounced, coalescing) and prints the score with a delta after each run — a live motion-quality readout for the iteration loop.
 
 ## [0.2.0] — 2026-07-14
 
