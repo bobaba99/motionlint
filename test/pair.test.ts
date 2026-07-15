@@ -34,4 +34,15 @@ describe("composeLabeledStrip", () => {
     const a = await solid(100, 100, 128);
     await assert.rejects(() => composeLabeledStrip([{ label: "only", png: a }]), /at least two/);
   });
+
+  it("survives labels containing XML special characters", async () => {
+    const a = await solid(100, 100, 200);
+    const b = await solid(100, 100, 60);
+    const strip = await composeLabeledStrip([
+      { label: "before & after", png: a },
+      { label: "<current>", png: b },
+    ]);
+    const meta = await sharp(strip).metadata();
+    assert.ok((meta.width ?? 0) >= 200);
+  });
 });

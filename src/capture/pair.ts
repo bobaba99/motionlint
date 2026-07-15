@@ -15,11 +15,15 @@ const LABEL_BAR_H = 44;
 const GUTTER = 16;
 const MAX_ROW_H = 1200;
 
+function escapeXml(s: string): string {
+  return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+}
+
 function labelSvg(text: string, width: number): Buffer {
   return Buffer.from(
     `<svg width="${width}" height="${LABEL_BAR_H}" xmlns="http://www.w3.org/2000/svg">
       <rect width="100%" height="100%" fill="#111318"/>
-      <text x="14" y="${LABEL_BAR_H / 2 + 5}" font-family="Menlo, monospace" font-size="16" fill="#e8e8ec" letter-spacing="2">${text.toUpperCase()}</text>
+      <text x="14" y="${LABEL_BAR_H / 2 + 5}" font-family="Menlo, monospace" font-size="16" fill="#e8e8ec" letter-spacing="2">${escapeXml(text.toUpperCase())}</text>
     </svg>`,
   );
 }
