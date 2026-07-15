@@ -86,6 +86,9 @@ motionlint review https://pr-123.preview.example.com --against https://prod.exam
 # Color-scheme sweep — test both light and dark modes, plus Windows High Contrast.
 motionlint review http://localhost:3000 --schemes --forced-colors --format html -o review.html
 
+# Storybook mode — discover stories from /index.json, review each story iframe as its own route.
+motionlint review http://localhost:6006 --storybook
+
 # Reviewer focus — cap the SARIF upload at 10 annotations per report.
 motionlint review https://staging.acme.dev --format sarif -o ux.sarif --max-pr-annotations 10
 ```

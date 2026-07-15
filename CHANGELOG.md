@@ -10,6 +10,7 @@ All notable changes to MotionLint will be documented here. Format follows [Keep 
 - **Layout linter** — `audit --layout` converts the DOM side-channel's measurements into deterministic findings: tap targets under 44px (WCAG 2.5.8), body text under 16px, text under 12px, contrast under 4.5:1 (WCAG 1.4.3), horizontal overflow, type-size sprawl, and empty list containers. Separate 0–100 score, rendered as a second section in the audit report. No vision model.
 - **Before/after review** — `review --against <baseline-url>` captures both URLs per viewport, composes a labeled CURRENT|BASELINE strip, and asks the model for *differences only*: regressions come back as issues, improvements as strengths, identical pages as a clean report. Same provider-call count as a plain review.
 - **Color-scheme sweep** — `review --schemes` re-captures every viewport under `prefers-color-scheme: dark`, composes a labeled light|dark strip, and reviews it for scheme-specific defects (unreadable text, hardcoded light surfaces, vanishing borders, unstyled controls). `--forced-colors` adds a Windows High Contrast panel.
+- **Storybook mode** — `review --storybook` discovers stories from Storybook's /index.json and reviews each story iframe as its own route (memory, caps, and SARIF all apply per story).
 
 ## [0.2.0] — 2026-07-14
 

@@ -31,6 +31,7 @@ export function buildProgram(): Command {
     .description("Capture a URL at multiple viewports and analyze it for UX issues.")
     .option("-r, --routes <list>", "Comma-separated additional paths to also review (joined to base URL).")
     .option("--discover-routes", "Auto-discover routes from /sitemap.xml and a Next.js app directory in cwd.", false)
+    .option("--storybook", "Treat the URL as a Storybook: discover stories from /index.json and review each story iframe.", false)
     .option("-v, --viewport <name>", "Single viewport (mobile|tablet|desktop). Repeatable: -v mobile -v desktop.", collectViewport, [] as string[])
     .option("--viewports <list>", "Comma-separated viewport names.")
     .option("--provider <name>", "Provider: auto|ollama|anthropic|openai|google|mock.")
@@ -540,6 +541,7 @@ function parsePositiveInt(value: string | undefined, flag: string): number | und
 interface ReviewOptions {
   routes?: string;
   discoverRoutes?: boolean;
+  storybook?: boolean;
   viewport?: string[];
   viewports?: string;
   provider?: string;
@@ -625,6 +627,23 @@ async function runReviewCommand(rawUrl: string, opts: ReviewOptions): Promise<vo
     targets = [...merged];
     if (!opts.quiet) {
       console.error(kleur.gray(`  discovered ${discovered.length} route(s) → reviewing ${targets.length} URL(s)`));
+    }
+  }
+
+  if (opts.storybook) {
+    const { discoverStorybookStories } = await import("../capture/discover.js");
+    const stories = await discoverStorybookStories(rawUrl);
+    if (stories.length === 0) {
+      throw new Error("No Storybook stories found at /index.json — is this a Storybook 7+ URL?");
+    }
+    const base = new URL(rawUrl);
+    const merged = new Set(targets.filter((t) => t !== rawUrl)); // review stories, not the manager shell
+    for (const path of stories) {
+      merged.add(new URL(path, base).toString());
+    }
+    targets = [...merged];
+    if (!opts.quiet) {
+      console.error(kleur.gray(`  discovered ${stories.length} story(ies) → reviewing ${targets.length} URL(s)`));
     }
   }
 
