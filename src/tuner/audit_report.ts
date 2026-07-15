@@ -5,6 +5,7 @@
  */
 import { escapeHtml, htmlShell, scoreRing, severityPills } from "../report/html_shell.js";
 import type { AnimationAudit, AnimationFinding } from "./lint.js";
+import type { LayoutAudit } from "../lint/layout.js";
 
 const CATEGORY_LABEL: Record<AnimationFinding["category"], string> = {
   easing: "Easing",
@@ -102,7 +103,24 @@ function headline(audit: AnimationAudit): { title: string; blurb: string } {
   return { title: "Motion is on-standard", blurb: "Every measured animation matches Emil Kowalski's standards." };
 }
 
-export function renderAnimationAuditHtml(audit: AnimationAudit): string {
+function renderLayoutSection(layout: LayoutAudit): string {
+  return `
+  <section class="layout-audit">
+    <h2>Layout audit — ${layout.score}/100</h2>
+    <p class="counts">${layout.critical_count} critical · ${layout.warning_count} warning · ${layout.suggestion_count} suggestion</p>
+    ${layout.findings.map((f) => `
+    <div class="finding sev-${f.severity}">
+      <div class="top"><span class="badge">${escapeHtml(f.severity)}</span><span class="tag">${escapeHtml(f.category)}</span><h3>${escapeHtml(f.title)}</h3></div>
+      <p class="loc">${escapeHtml(f.location)}</p>
+      <p>${escapeHtml(f.detail)}</p>
+      <p><b>Why:</b> ${escapeHtml(f.why)}</p>
+      <p><b>Fix:</b> ${escapeHtml(f.fix)}</p>
+      <p class="std">Standard: ${escapeHtml(f.standard)}</p>
+    </div>`).join("")}
+  </section>`;
+}
+
+export function renderAnimationAuditHtml(audit: AnimationAudit, layout?: LayoutAudit): string {
   const h = headline(audit);
   const summary = `
   <div class="summary">
@@ -124,6 +142,9 @@ export function renderAnimationAuditHtml(audit: AnimationAudit): string {
     <div class="section-h"><h2>Findings</h2><span class="count">${audit.findings.length} total</span></div>
     ${audit.findings.map(renderFinding).join("\n")}`;
   }
+
+  const layoutSection = layout ? renderLayoutSection(layout) : "";
+  body = `${body}${layoutSection}`;
 
   return htmlShell({
     title: "MotionLint Animation Audit",

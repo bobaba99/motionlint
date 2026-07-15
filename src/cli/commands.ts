@@ -143,6 +143,7 @@ export function buildProgram(): Command {
     .option("--json <path>", "Also write the raw audit JSON to this path.")
     .option("--viewport <wxh>", "Capture viewport, e.g. 1280x800.", "1280x800")
     .option("--settle <ms>", "Time to wait after load for animations to register.", "1500")
+    .option("--layout", "Also lint layout (tap targets, text size, contrast, overflow) from DOM measurements. Deterministic — no vision model.", false)
     .option("--open", "Open the generated report in the default browser.", false)
     .option("--ci", "Exit non-zero if any critical finding is reported.", false)
     .option("--quiet", "Suppress progress output.", false)
@@ -312,6 +313,7 @@ interface AuditCliOptions {
   json?: string;
   viewport?: string;
   settle?: string;
+  layout?: boolean;
   open?: boolean;
   ci?: boolean;
   quiet?: boolean;
@@ -335,6 +337,23 @@ async function runAuditCommand(url: string, opts: AuditCliOptions): Promise<void
   });
   const audit = auditAnimations(capture);
 
+  let layout: import("../lint/layout.js").LayoutAudit | undefined;
+  if (opts.layout) {
+    const { captureScreenshot } = await import("../capture/screenshot.js");
+    const { auditLayout } = await import("../lint/layout.js");
+    if (!opts.quiet) console.error(kleur.cyan(`→ Measuring layout…`));
+    const cap = await captureScreenshot({
+      url,
+      viewport: { name: "audit", width: w || 1280, height: h || 800 },
+      fullPage: true,
+      withDom: true,
+    });
+    if (cap.dom) {
+      layout = auditLayout(cap.dom);
+      if (!opts.quiet) console.error(kleur.gray(`  layout score ${layout.score}/100 · ${layout.findings.length} finding(s)`));
+    }
+  }
+
   if (!opts.quiet) {
     console.error(kleur.gray(`  measured ${audit.total_animations} animation(s)`));
     const sev = (n: number, label: string, color: (s: string) => string) => (n > 0 ? color(`${n} ${label}`) : kleur.gray(`0 ${label}`));
@@ -350,13 +369,14 @@ async function runAuditCommand(url: string, opts: AuditCliOptions): Promise<void
 
   const outPath = resolvePath(opts.output ?? ".motionlint/audit/index.html");
   await mkdir(dirname(outPath), { recursive: true });
-  await writeFile(outPath, renderAnimationAuditHtml(audit), "utf8");
+  await writeFile(outPath, renderAnimationAuditHtml(audit, layout), "utf8");
   console.error(kleur.green(`  report → ${outPath}`));
   console.error(kleur.gray(`  open with: file://${outPath}`));
 
   if (opts.json) {
     await mkdir(dirname(resolvePath(opts.json)), { recursive: true });
-    await writeFile(resolvePath(opts.json), JSON.stringify(audit, null, 2), "utf8");
+    const jsonPayload = layout ? { ...audit, layout } : audit;
+    await writeFile(resolvePath(opts.json), JSON.stringify(jsonPayload, null, 2), "utf8");
     console.error(kleur.green(`  json   → ${opts.json}`));
   }
 
@@ -366,7 +386,7 @@ async function runAuditCommand(url: string, opts: AuditCliOptions): Promise<void
     spawn(opener, [outPath], { detached: true, stdio: "ignore" }).unref();
   }
 
-  if (opts.ci && audit.critical_count > 0) process.exit(1);
+  if (opts.ci && audit.critical_count + (layout?.critical_count ?? 0) > 0) process.exit(1);
 }
 
 interface EvalCliOptions {

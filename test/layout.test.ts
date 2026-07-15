@@ -2,6 +2,8 @@ import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 import { auditLayout, lintLayout } from "../src/lint/layout.js";
 import type { DomSnapshot } from "../src/capture/dom.js";
+import { renderAnimationAuditHtml } from "../src/tuner/audit_report.js";
+import type { AnimationAudit } from "../src/tuner/lint.js";
 
 function snapshot(overrides: Partial<DomSnapshot> = {}): DomSnapshot {
   return {
@@ -99,5 +101,32 @@ describe("layout linter", () => {
     assert.equal(audit.critical_count, 1);
     assert.equal(audit.warning_count, 1);
     assert.equal(audit.suggestion_count, 1);
+  });
+});
+
+describe("layout section in audit HTML", () => {
+  const animAudit: AnimationAudit = {
+    url: "http://localhost:4173/",
+    captured_at: "2026-07-14T00:00:00.000Z",
+    viewport: { width: 1280, height: 800 },
+    total_animations: 0,
+    findings: [],
+    critical_count: 0,
+    warning_count: 0,
+    suggestion_count: 0,
+    score: 100,
+  };
+
+  it("renders a Layout section when a layout audit is supplied", () => {
+    const layout = auditLayout(snapshot({ horizontal_overflow: true, overflow_amount_px: 20 }));
+    const html = renderAnimationAuditHtml(animAudit, layout);
+    assert.match(html, /Layout/);
+    assert.match(html, /overflows horizontally/);
+    assert.match(html, /75\/100|75/); // layout score: 100 - 25
+  });
+
+  it("renders unchanged without a layout audit", () => {
+    const html = renderAnimationAuditHtml(animAudit);
+    assert.doesNotMatch(html, /Layout audit/);
   });
 });
