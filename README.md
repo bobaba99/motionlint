@@ -348,6 +348,8 @@ motionlint audit http://localhost:3000 --open          # polished HTML report, s
 motionlint audit http://localhost:3000 --json audit.json --ci   # machine-readable; non-zero on critical
 ```
 
+Add `--layout` to also lint layout (tap targets, text size, contrast, overflow) from live DOM measurements — still deterministic, still no API key.
+
 The report pairs every finding with a **before → after** panel; easing findings render a live cubic-bezier curve comparison so the fix is visible, not just described. The same standards feed the `flow` review prompt (so vision findings cite concrete rules) and appear inline in the Animation Tuner.
 
 ## MCP server — tools, resources, deployment
