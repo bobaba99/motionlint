@@ -82,6 +82,9 @@ export async function runFlow(opts: RunFlowOptions): Promise<FlowReport> {
   }
   opts.onProgress?.({ type: "capture_finished", total_frames: capture.frames.length, duration_ms: capture.total_duration_ms });
 
+  const { measureFeedbackLatency } = await import("./latency.js");
+  const latency = await measureFeedbackLatency(capture);
+
   // Build the contact sheet.
   const sheetBuf = await buildContactSheet(capture.frames);
   await mkdir(artifactDir, { recursive: true });
@@ -120,6 +123,7 @@ export async function runFlow(opts: RunFlowOptions): Promise<FlowReport> {
     model: provider.model,
     capture,
     analysis,
+    latency,
     contact_sheet_path: sheetPath,
     video_path: capture.video_path,
     preferences_md: preferencesMd,

@@ -95,6 +95,8 @@ export interface FlowReport {
   model: string;
   capture: FlowCaptureResult;
   analysis: AnalysisResult;
+  /** Deterministic input→feedback measurements, one per interaction burst. */
+  latency?: import("./latency.js").LatencyMeasurement[];
   contact_sheet_path?: string;
   video_path?: string;
   /** Verbatim contents of the user-supplied preferences markdown, if any. */

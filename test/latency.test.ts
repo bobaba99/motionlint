@@ -2,7 +2,8 @@ import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 import sharp from "sharp";
 import { frameDiffScore, measureFeedbackLatency, INSTANT_MS } from "../src/flow/latency.js";
-import type { CapturedFrame, FlowCaptureResult, FlowStepResult } from "../src/flow/types.js";
+import { renderFlowMarkdownReport } from "../src/flow/report.js";
+import type { CapturedFrame, FlowCaptureResult, FlowStepResult, FlowReport } from "../src/flow/types.js";
 
 function solid(rgb: [number, number, number]): Promise<Buffer> {
   return sharp({ create: { width: 32, height: 32, channels: 3, background: { r: rgb[0], g: rgb[1], b: rgb[2] } } })
@@ -89,5 +90,29 @@ describe("measureFeedbackLatency", () => {
       ],
     );
     assert.deepEqual(await measureFeedbackLatency(cap), []);
+  });
+});
+
+describe("latency section in flow report", () => {
+  it("renders a feedback-latency table and flags none/delayed verdicts", async () => {
+    const white = await solid([255, 255, 255]);
+    const report: FlowReport = {
+      generated_at: "2026-07-14T00:00:00.000Z",
+      flow_name: "signup",
+      url: "http://localhost:4173/",
+      provider: "mock",
+      model: "mock",
+      capture: capture([frame(0, 0, 0, white)], []),
+      analysis: { overall_score: 8, summary: "ok", issues: [], strengths: [], viewport: "desktop" },
+      latency: [
+        { step_index: 0, step_label: "click submit", action: "click", feedback_ms: null, burst_window_ms: 750, verdict: "none" },
+        { step_index: 1, step_label: "type email", action: "type", feedback_ms: 50, burst_window_ms: 750, verdict: "instant" },
+      ],
+    };
+    const md = renderFlowMarkdownReport(report);
+    assert.match(md, /Input feedback latency/);
+    assert.match(md, /click submit/);
+    assert.match(md, /no visual feedback/i);
+    assert.match(md, /50ms/);
   });
 });

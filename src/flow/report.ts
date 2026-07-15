@@ -135,6 +135,23 @@ export function renderFlowMarkdownReport(report: FlowReport, opts: { reportDir?:
     lines.push("");
   }
 
+  if (report.latency?.length) {
+    lines.push("", "## Input feedback latency", "");
+    lines.push("| Step | Action | Feedback | Verdict |", "| --- | --- | --- | --- |");
+    for (const m of report.latency) {
+      const feedback = m.feedback_ms === null
+        ? `no visual feedback within ${m.burst_window_ms}ms`
+        : `${m.feedback_ms}ms`;
+      lines.push(`| ${m.step_label} | ${m.action} | ${feedback} | ${m.verdict} |`);
+    }
+    const bad = report.latency.filter((m) => m.verdict !== "instant");
+    for (const m of bad) {
+      lines.push("", m.verdict === "none"
+        ? `- ⚠ **${m.step_label}**: the UI never visibly acknowledged the ${m.action} — add immediate feedback (pressed state, spinner, skeleton) within 100ms.`
+        : `- ⚠ **${m.step_label}**: first feedback at ${m.feedback_ms}ms — aim for <100ms perceived-instant acknowledgment.`);
+    }
+  }
+
   if (report.analysis.strengths.length > 0) {
     lines.push(`## Strengths`);
     lines.push("");
