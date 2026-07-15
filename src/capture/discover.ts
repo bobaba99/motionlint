@@ -128,6 +128,16 @@ export async function discoverNextAppRoutes(cwd: string): Promise<string[]> {
   return [];
 }
 
+/**
+ * Map a target URL's path+query onto a baseline URL's origin — used when one
+ * --against baseline must be compared against many discovered routes. A
+ * single-target review uses the baseline verbatim instead.
+ */
+export function mapPathOntoBaseline(target: string, baseline: string): string {
+  const t = new URL(target);
+  return new URL(t.pathname + t.search, baseline).toString();
+}
+
 export interface DiscoverRoutesOptions {
   url: string;
   cwd?: string;

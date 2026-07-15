@@ -4,7 +4,7 @@ import { readFile } from "node:fs/promises";
 import { runReview } from "../pipeline.js";
 import { loadConfig } from "../config/loader.js";
 import { parseInteractionsFromString } from "../capture/interactions.js";
-import { discoverRoutes } from "../capture/discover.js";
+import { discoverRoutes, mapPathOntoBaseline } from "../capture/discover.js";
 import { appendRun, detectRegressions, loadHistory, recordFromReport, saveHistory } from "../eval/history.js";
 import { buildAddenda, loadAddendaLines, saveAddenda } from "../eval/evolve.js";
 import { withMemoryLock } from "../memory/lock.js";
@@ -715,11 +715,13 @@ async function runReviewCommand(rawUrl: string, opts: ReviewOptions): Promise<vo
   // With multiple targets (--routes / --discover-routes / --storybook), a
   // single flat --against URL must not be reused verbatim for every route —
   // that would compare, say, /pricing against the baseline's homepage. Map
-  // each target's path+search onto the baseline origin instead.
+  // each target's path+search onto the baseline origin instead. A single
+  // target, though, uses the baseline exactly as the user typed it — mapping
+  // it would silently override a deliberately different baseline path.
   const baselineFor = (target: string): string | null => {
     if (!opts.against) return null;
-    const t = new URL(target);
-    return new URL(t.pathname + t.search, opts.against).toString();
+    if (targets.length > 1) return mapPathOntoBaseline(target, opts.against);
+    return opts.against;
   };
   if (opts.against && targets.length > 1 && !opts.quiet) {
     console.error(kleur.gray(`  --against maps each route onto ${new URL(opts.against).origin}`));

@@ -8,6 +8,7 @@ import {
   discoverRoutes,
   discoverRoutesFromSitemap,
   discoverStorybookStories,
+  mapPathOntoBaseline,
   parseSitemapXml,
 } from "../src/capture/discover.js";
 
@@ -150,5 +151,21 @@ describe("discoverStorybookStories", () => {
     assert.deepEqual(await discoverStorybookStories("http://localhost:6006", { fetchImpl: fetch404 }), []);
     const fetchJunk = (async () => ({ ok: true, json: async () => ({ nope: 1 }) })) as unknown as typeof fetch;
     assert.deepEqual(await discoverStorybookStories("http://localhost:6006", { fetchImpl: fetchJunk }), []);
+  });
+});
+
+describe("mapPathOntoBaseline", () => {
+  it("maps the target's path and query onto the baseline origin", () => {
+    assert.equal(
+      mapPathOntoBaseline("https://preview.app/pricing?tab=teams", "https://prod.app/"),
+      "https://prod.app/pricing?tab=teams",
+    );
+  });
+
+  it("drops the baseline's own path when mapping", () => {
+    assert.equal(
+      mapPathOntoBaseline("https://preview.app/a", "https://prod.app/old"),
+      "https://prod.app/a",
+    );
   });
 });
