@@ -698,6 +698,19 @@ async function runReviewCommand(rawUrl: string, opts: ReviewOptions): Promise<vo
     }
   }
 
+  // With multiple targets (--routes / --discover-routes / --storybook), a
+  // single flat --against URL must not be reused verbatim for every route —
+  // that would compare, say, /pricing against the baseline's homepage. Map
+  // each target's path+search onto the baseline origin instead.
+  const baselineFor = (target: string): string | null => {
+    if (!opts.against) return null;
+    const t = new URL(target);
+    return new URL(t.pathname + t.search, opts.against).toString();
+  };
+  if (opts.against && targets.length > 1 && !opts.quiet) {
+    console.error(kleur.gray(`  --against maps each route onto ${new URL(opts.against).origin}`));
+  }
+
   let highestExit = 0;
   for (const url of targets) {
     if (!opts.quiet) console.error(kleur.cyan(`→ Reviewing ${url}`));
@@ -712,7 +725,7 @@ async function runReviewCommand(rawUrl: string, opts: ReviewOptions): Promise<vo
       fullPage: opts.fullPage ?? true,
       interactions,
       stateGrid: opts.stateGrid ?? false,
-      againstUrl: opts.against ?? null,
+      againstUrl: baselineFor(url),
       schemes: opts.schemes ?? false,
       forcedColors: opts.forcedColors ?? false,
       format,
