@@ -6,6 +6,7 @@ All notable changes to MotionLint will be documented here. Format follows [Keep 
 
 ### Added
 
+- **Input-feedback latency** — flow reports now measure, deterministically, how long each click/type/press took to produce *any* visible change: burst frames are pixel-diffed against the interaction moment, and every interaction gets an instant (<100ms) / delayed / none verdict. "None" verdicts call out missing loading feedback with a concrete fix.
 - **Layout linter** — `audit --layout` converts the DOM side-channel's measurements into deterministic findings: tap targets under 44px (WCAG 2.5.8), body text under 16px, text under 12px, contrast under 4.5:1 (WCAG 1.4.3), horizontal overflow, type-size sprawl, and empty list containers. Separate 0–100 score, rendered as a second section in the audit report. No vision model.
 
 ## [0.2.0] — 2026-07-14

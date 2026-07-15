@@ -231,7 +231,7 @@ Static screenshots can't tell you whether a flow's animations and interaction st
 Given a scripted user journey, it:
 
 1. Runs the journey in headless Chromium via Playwright — clicking, typing, hovering, scrolling, pressing keys exactly like a user would.
-2. Captures a **burst of 16 frames over 750ms (50ms intervals) after every interaction** via CDP screencast (`Page.captureScreenshot` JPEG, ~8ms per shot). 50ms is half the human visual-detection threshold and below the industry-typical 100ms minimum animation interval — short animations like 100ms button presses get caught with 2-3 mid-state frames.
+2. Captures a **burst of 16 frames over 750ms (50ms intervals) after every interaction** via CDP screencast (`Page.captureScreenshot` JPEG, ~8ms per shot). 50ms is half the human visual-detection threshold and below the industry-typical 100ms minimum animation interval — short animations like 100ms button presses get caught with 2-3 mid-state frames. Every interaction burst is also pixel-diffed for input→feedback latency — interactions with no visible acknowledgment within the burst window are flagged deterministically.
 3. Records the **full Playwright video** as an artifact you can scrub later.
 4. Composites every burst into a labeled **contact sheet** — one row per step, frames laid out in sub-rows.
 5. Sends the sheet to the vision LLM with a flow-aware rubric covering: missing animations, buggy/janky animations, missing loading states, perceived performance, affordance & state changes, choreography, smoothness, accidental flicker, navigation continuity, reduced-motion respect.
