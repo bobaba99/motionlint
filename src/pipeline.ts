@@ -58,6 +58,10 @@ export interface RunReviewOptions {
   stateGrid?: boolean;
   /** Compare against this baseline URL: each viewport analyzes a CURRENT|BASELINE strip instead of a plain capture. */
   againstUrl?: string | null;
+  /** Also capture each viewport under dark (and optionally forced-colors) and review the strip. */
+  schemes?: boolean;
+  /** Include a forced-colors: active panel in the scheme strip. */
+  forcedColors?: boolean;
   onProgress?: (event: ProgressEvent) => void;
 }
 
@@ -220,6 +224,57 @@ export async function runReview(opts: RunReviewOptions): Promise<RunReviewResult
     }
   }
 
+  // Color-scheme sweep: one extra pseudo-viewport per real viewport showing
+  // light | dark (| forced-colors) renderings side by side.
+  const schemeNames: Set<string> = new Set();
+  if (opts.schemes) {
+    const { composeLabeledStrip } = await import("./capture/pair.js");
+    const baseCaptures = captures.filter((c) => c.viewport.name !== "interaction-states" && !c.viewport.name.endsWith("-vs-baseline"));
+    for (const light of baseCaptures) {
+      try {
+        const dark = await captureScreenshot({
+          url,
+          viewport: light.viewport,
+          fullPage: opts.fullPage ?? true,
+          waitFor: config.waitFor,
+          waitTimeout: config.waitTimeout,
+          auth: config.auth,
+          colorScheme: "dark",
+        });
+        const panels = [
+          { label: "light", png: light.screenshot },
+          { label: "dark", png: dark.screenshot },
+        ];
+        if (opts.forcedColors) {
+          const forced = await captureScreenshot({
+            url,
+            viewport: light.viewport,
+            fullPage: opts.fullPage ?? true,
+            waitFor: config.waitFor,
+            waitTimeout: config.waitTimeout,
+            auth: config.auth,
+            forcedColors: true,
+          });
+          panels.push({ label: "forced colors", png: forced.screenshot });
+        }
+        const strip = await composeLabeledStrip(panels);
+        const name = `${light.viewport.name}-schemes`;
+        schemeNames.add(name);
+        const capture: CaptureResult = {
+          url,
+          viewport: { name, width: light.viewport.width, height: light.viewport.height },
+          screenshot: strip,
+          fullPage: false,
+          timestamp: new Date().toISOString(),
+        };
+        onProgress?.({ type: "capture_done", capture });
+        captures.push(capture);
+      } catch {
+        /* scheme sweep is an enhancement, never a run failure */
+      }
+    }
+  }
+
   const tokenLimit = opts.maxTokens !== undefined ? opts.maxTokens : config.resources.maxTokensPerRun;
   let usage = emptyRunUsage(typeof tokenLimit === "number" && tokenLimit > 0 ? tokenLimit : null);
 
@@ -245,6 +300,9 @@ export async function runReview(opts: RunReviewOptions): Promise<RunReviewResult
       ...(isGrid ? { stateGrid: { states: GRID_STATES, elements: gridElements as string[] } } : {}),
       ...(comparing && capture.viewport.name.endsWith("-vs-baseline")
         ? { compare: { baselineUrl: opts.againstUrl as string } }
+        : {}),
+      ...(schemeNames.has(capture.viewport.name)
+        ? { schemePair: { schemes: opts.forcedColors ? ["light", "dark", "forced-colors"] : ["light", "dark"] } }
         : {}),
     });
     const analysis = resolveElementRefs(

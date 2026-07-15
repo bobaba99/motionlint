@@ -45,6 +45,8 @@ export function buildProgram(): Command {
     .option("--interactions <spec>", "Path to a file or inline JSON with interaction steps.")
     .option("--state-grid", "Also capture an interaction-state grid (default/hover/focus/active per element) and review it.", false)
     .option("--against <url>", "Compare against a baseline URL (e.g. production): reviews CURRENT vs BASELINE side by side and reports only differences.")
+    .option("--schemes", "Also capture each viewport under prefers-color-scheme: dark and review light|dark side by side.", false)
+    .option("--forced-colors", "Add a forced-colors (Windows High Contrast) panel to the --schemes strip.", false)
     .option("--ci", "Exit with non-zero code if issues exceed the configured threshold.", false)
     .option("--threshold <severity>", `CI severity threshold: ${VALID_SEVERITIES.join("|")}.`)
     .option("--max-findings <n>", "Keep only the top N findings per run, severity-ordered (agent focus).")
@@ -552,6 +554,8 @@ interface ReviewOptions {
   interactions?: string;
   stateGrid?: boolean;
   against?: string;
+  schemes?: boolean;
+  forcedColors?: boolean;
   ci?: boolean;
   threshold?: string;
   maxFindings?: string;
@@ -639,6 +643,8 @@ async function runReviewCommand(rawUrl: string, opts: ReviewOptions): Promise<vo
       interactions,
       stateGrid: opts.stateGrid ?? false,
       againstUrl: opts.against ?? null,
+      schemes: opts.schemes ?? false,
+      forcedColors: opts.forcedColors ?? false,
       format,
       outputPath: opts.output === false ? null : opts.output ?? undefined,
       embedScreenshots: opts.embed ?? false,
