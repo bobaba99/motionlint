@@ -20,7 +20,9 @@ export class OpenAIProvider implements VisionProvider {
   constructor(opts: OpenAIProviderOptions = {}) {
     this.apiKey = opts.apiKey ?? process.env.OPENAI_API_KEY;
     this.model = opts.model ?? "gpt-4o";
-    this.baseUrl = opts.baseUrl ?? OPENAI_API;
+    // OPENAI_BASE_URL points the provider at any OpenAI-compatible endpoint
+    // (Moonshot/Kimi, Together, vLLM…) — pair it with that service's key.
+    this.baseUrl = opts.baseUrl ?? process.env.OPENAI_BASE_URL ?? OPENAI_API;
   }
 
   async isAvailable(): Promise<boolean> {
