@@ -35,24 +35,32 @@ export class OpenAIProvider implements VisionProvider {
     const { data, mediaType } = await compressForLLM(screenshot, { format: "jpeg" });
     const dataUrl = `data:${mediaType};base64,${data}`;
 
-    const res = await fetch(this.baseUrl, {
-      method: "POST",
-      headers: {
-        "content-type": "application/json",
-        authorization: `Bearer ${this.apiKey}`,
-      },
-      body: JSON.stringify({
-        model: this.model,
-        response_format: { type: "json_object" },
-        messages: [{
-          role: "user",
-          content: [
-            { type: "image_url", image_url: { url: dataUrl } },
-            { type: "text", text: prompt },
-          ],
-        }],
-      }),
-    });
+    const request = (withResponseFormat: boolean) =>
+      fetch(this.baseUrl, {
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+          authorization: `Bearer ${this.apiKey}`,
+        },
+        body: JSON.stringify({
+          model: this.model,
+          ...(withResponseFormat ? { response_format: { type: "json_object" } } : {}),
+          messages: [{
+            role: "user",
+            content: [
+              { type: "image_url", image_url: { url: dataUrl } },
+              { type: "text", text: prompt },
+            ],
+          }],
+        }),
+      });
+
+    let res = await request(true);
+    if (!res.ok && [400, 401, 403].includes(res.status)) {
+      // Some models/tiers and OpenAI-compatible endpoints reject
+      // response_format — the prompt already demands JSON, so retry without.
+      res = await request(false);
+    }
 
     if (!res.ok) {
       const text = await res.text().catch(() => "");
