@@ -104,3 +104,62 @@ describe("animation audit HTML report", () => {
     assert.match(html, /on-standard/);
   });
 });
+
+describe("HTML report never calls a failed review clean", () => {
+  // Every severity count is 0 when nothing was reviewed, so headline() fell
+  // through to "Clean bill of health" with a green pill, and the summary card
+  // claimed "2 viewports reviewed" for viewports that produced no review at all.
+  // This file is the artifact people paste into team channels — whoever opens it
+  // sees green and ships.
+  function failedReport(failedCount: number, okCount = 0): ReviewReport {
+    const base = sampleReport();
+    const entry = base.analyses[0];
+    const mk = (failed: boolean) => ({
+      ...entry,
+      analysis: failed
+        ? { ...entry.analysis, overall_score: 0, issues: [], strengths: [],
+            summary: "Failed to parse model JSON: Unterminated string in JSON at position 1961" }
+        : { ...entry.analysis, overall_score: 8, issues: [], strengths: [], summary: "Looks fine." },
+    });
+    return {
+      ...base,
+      aggregate_score: 0,
+      critical_count: 0,
+      warning_count: 0,
+      suggestion_count: 0,
+      analyses: [
+        ...Array.from({ length: failedCount }, () => mk(true)),
+        ...Array.from({ length: okCount }, () => mk(false)),
+      ],
+    };
+  }
+
+  it("says the review did not complete when every viewport failed", () => {
+    const html = renderReviewHtmlReport(failedReport(2));
+    assert.match(html, /Review did not complete/);
+    assert.doesNotMatch(html, /Clean bill of health/);
+    assert.doesNotMatch(html, />clean</, "must not render the green clean pill");
+    assert.match(html, /review incomplete/);
+  });
+
+  it("does not claim viewports were reviewed when they failed", () => {
+    const html = renderReviewHtmlReport(failedReport(2));
+    // The bare claim "· 2 viewports reviewed" must be gone. Match on the
+    // separator so the honest "0 of 2 viewports reviewed (2 failed)" — which
+    // legitimately contains that substring — is not flagged.
+    assert.doesNotMatch(html, /·\s*2 viewports reviewed/);
+    assert.match(html, /0 of 2 viewports reviewed \(2 failed\)/);
+  });
+
+  it("flags a partial review when only some viewports failed", () => {
+    const html = renderReviewHtmlReport(failedReport(1, 1));
+    assert.match(html, /Partial review — 1 viewport failed/);
+    assert.match(html, /1 of 2 viewports reviewed \(1 failed\)/);
+  });
+
+  it("still reports a genuinely clean page as clean", () => {
+    const html = renderReviewHtmlReport(failedReport(0, 2));
+    assert.match(html, /Clean bill of health/);
+    assert.match(html, /2 viewports reviewed/);
+  });
+});

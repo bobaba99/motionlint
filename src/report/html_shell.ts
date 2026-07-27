@@ -222,8 +222,20 @@ export function scoreRing(score: number): string {
   </div>`;
 }
 
-/** Severity count pills. Renders a single "clean" pill when there are no findings. */
-export function severityPills(counts: { critical: number; warning: number; suggestion: number }): string {
+/**
+ * Severity count pills. Renders a single "clean" pill when there are no findings.
+ *
+ * Pass `failed: true` when the run produced no usable analysis — zero findings
+ * then means "nothing was reviewed", not "nothing was wrong", and a green pill
+ * would be an outright false claim on a shareable artifact.
+ */
+export function severityPills(
+  counts: { critical: number; warning: number; suggestion: number },
+  opts: { failed?: boolean } = {},
+): string {
+  if (opts.failed) {
+    return `<div class="tallies"><span class="pill crit"><span class="dot"></span>review incomplete</span></div>`;
+  }
   const parts: string[] = [];
   if (counts.critical) parts.push(`<span class="pill crit"><span class="dot"></span>${counts.critical} critical</span>`);
   if (counts.warning) parts.push(`<span class="pill warn"><span class="dot"></span>${counts.warning} warning</span>`);

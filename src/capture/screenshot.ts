@@ -60,16 +60,36 @@ export async function captureScreenshot(opts: CaptureOptions): Promise<CaptureRe
   try {
     await applyPageAuth(page, opts.url, opts.auth);
 
-    await page.goto(opts.url, {
+    const response = await page.goto(opts.url, {
       waitUntil: (opts.waitFor === "networkidle" ? "networkidle" : "load"),
       timeout: opts.waitTimeout ?? 15_000,
     });
+
+    // page.goto resolves for ANY HTTP status — it rejects only on network-level
+    // errors. An auth wall, a 404, or a 500 renders as a real, screenshottable
+    // page: minimal, centred, high-contrast. The reviewer finds nothing to fault
+    // and reports a high score, so "reviewed the app" and "reviewed the login
+    // page" produce identical-looking reports. Worst in CI, where nobody opens
+    // the screenshot. Fail loudly instead.
+    const status = response?.status();
+    if (status !== undefined && status >= 400) {
+      throw new Error(
+        `${opts.url} returned HTTP ${status} — the page that loaded is an error or auth page, not your app. ` +
+          `Reviewing it would report a clean result for a page you never intended to test.`,
+      );
+    }
 
     if (opts.waitFor && opts.waitFor !== "networkidle" && opts.waitFor !== "load") {
       try {
         await page.waitForSelector(opts.waitFor, { timeout: opts.waitTimeout ?? 10_000 });
       } catch {
-        /* selector did not appear — continue */
+        // The caller named a readiness selector precisely because the UI renders
+        // asynchronously. If it never appeared, the page is still a skeleton —
+        // and skeletons are simple and consistent, so they score WELL. Surface it.
+        throw new Error(
+          `Readiness selector "${opts.waitFor}" never appeared on ${opts.url} within ` +
+            `${opts.waitTimeout ?? 10_000}ms. The page had not finished rendering, so any review would grade a loading state.`,
+        );
       }
     }
 

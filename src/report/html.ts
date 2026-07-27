@@ -13,7 +13,43 @@ function sortIssues(issues: UXIssue[]): UXIssue[] {
   return [...issues].sort((a, b) => SEV_ORDER[a.severity] - SEV_ORDER[b.severity]);
 }
 
+/**
+ * A viewport whose analysis never produced a usable review: the provider was
+ * truncated, refused, blocked, or returned unparseable JSON. `parseAnalysisResponse`
+ * represents that as score 0 with no issues, which is byte-identical to a flawless
+ * page — so counts alone cannot tell them apart.
+ */
+function analysisFailed(entry: ReviewReport["analyses"][number]): boolean {
+  const a = entry.analysis;
+  return (
+    a.issues.length === 0 &&
+    a.overall_score === 0 &&
+    /failed to parse|did not return valid json/i.test(a.summary ?? "")
+  );
+}
+
 function headline(report: ReviewReport): { title: string; blurb: string } {
+  // Check this BEFORE the count branches. Every count is 0 when nothing was
+  // reviewed, so the old code fell through to "Clean bill of health" and the
+  // summary card claimed "N viewports reviewed" — for viewports that produced
+  // no review at all. This HTML is the artifact people paste into team channels.
+  const failed = report.analyses.filter(analysisFailed).length;
+  if (report.analyses.length > 0 && failed === report.analyses.length) {
+    return {
+      title: "Review did not complete",
+      blurb: `All ${failed} viewport${failed === 1 ? "" : "s"} failed to produce a usable analysis — this is not a passing result.`,
+    };
+  }
+  if (failed > 0) {
+    return {
+      title: `Partial review — ${failed} viewport${failed === 1 ? "" : "s"} failed`,
+      blurb: "Some viewports produced no usable analysis, so findings below are incomplete.",
+    };
+  }
+  if (report.analyses.length === 0) {
+    return { title: "Review did not complete", blurb: "No analyses were produced." };
+  }
+
   if (report.critical_count > 0) {
     return { title: "Critical issues need attention", blurb: "At least one finding blocks task completion or fails an accessibility standard." };
   }
@@ -103,14 +139,25 @@ function renderViewport(entry: AnalysisEntry): string {
 
 export function renderReviewHtmlReport(report: ReviewReport): string {
   const h = headline(report);
+  const failedCount = report.analyses.filter(analysisFailed).length;
+  const reviewed = report.analyses.length - failedCount;
+  const allFailed = report.analyses.length > 0 && failedCount === report.analyses.length;
+
+  // Count only viewports that produced a usable analysis. Saying "2 viewports
+  // reviewed" when both failed is a false statement of fact, not a rounding issue.
+  const reviewedLine =
+    failedCount > 0
+      ? `${reviewed} of ${report.analyses.length} viewport${report.analyses.length === 1 ? "" : "s"} reviewed (${failedCount} failed)`
+      : `${reviewed} viewport${reviewed === 1 ? "" : "s"} reviewed`;
+
   const summary = `
   <div class="summary">
     ${scoreRing(report.aggregate_score * 10)}
     <div class="headline">
       <h2>${escapeHtml(h.title)}</h2>
-      <p>${escapeHtml(h.blurb)} · ${report.analyses.length} viewport${report.analyses.length === 1 ? "" : "s"} reviewed · aggregate ${report.aggregate_score}/10${report.usage ? ` · ${escapeHtml(formatUsageLine(report.usage))}` : ""}</p>
+      <p>${escapeHtml(h.blurb)} · ${reviewedLine} · aggregate ${report.aggregate_score}/10${report.usage ? ` · ${escapeHtml(formatUsageLine(report.usage))}` : ""}</p>
     </div>
-    ${severityPills({ critical: report.critical_count, warning: report.warning_count, suggestion: report.suggestion_count })}
+    ${severityPills({ critical: report.critical_count, warning: report.warning_count, suggestion: report.suggestion_count }, { failed: allFailed })}
   </div>`;
 
   const body =
