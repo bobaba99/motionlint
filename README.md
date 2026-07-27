@@ -103,7 +103,7 @@ motionlint review https://pr-123.preview.example.com --against https://prod.exam
 motionlint review https://staging.acme.dev --format sarif -o ux.sarif --max-pr-annotations 10
 
 # Pick a provider explicitly (auto-detect picks the first reachable one).
-motionlint review http://localhost:3000 --provider anthropic --model claude-sonnet-4-6
+motionlint review http://localhost:3000 --provider anthropic --model claude-sonnet-5
 
 # Track provider quality across runs + teach the reviewer from eval misses.
 motionlint eval --provider anthropic --evolve
@@ -118,7 +118,7 @@ Sample terminal output for a flow review:
 ```text
 $ motionlint flow --spec flows/signup.json --provider anthropic
 → Running flow "signup-happy-path" against http://localhost:3000/signup (11 steps, 50ms intervals × 750ms window)
-  provider: anthropic (claude-sonnet-4-6)
+  provider: anthropic (claude-sonnet-5)
   capturing flow…
   ✓ step 1: 16 frames    ✓ step 2: 16 frames    ✓ step 3: 16 frames    …
   captured 176 frames in 31s
@@ -223,7 +223,7 @@ Every command honours `--provider` and `--model`:
 
 ```bash
 motionlint review http://localhost:3000 --provider openai    --model gpt-5.5
-motionlint flow   --spec flows/signup.json --provider google --model gemini-3.1-pro-preview
+motionlint flow   --spec flows/signup.json --provider google --model gemini-3.6-flash
 motionlint review http://localhost:3000 --provider ollama    --model llava:13b
 ```
 
