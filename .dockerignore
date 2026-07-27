@@ -1,0 +1,24 @@
+# Build artefacts and local state — the image builds dist/ from source itself.
+node_modules
+dist
+.motionlint
+.git
+.github
+
+# Demo app, docs and media: not needed to run the server, and ~30MB of context.
+demo
+docs
+eval
+flows
+scripts
+test
+
+# Local config and notes
+.env
+.env.local
+.whydunit
+TODO.md
+DEMO_PLAN.md
+PRD-motionlint.md
+CHANGELOG.md
+CONTRIBUTING.md
