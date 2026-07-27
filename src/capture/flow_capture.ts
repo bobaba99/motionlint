@@ -1,4 +1,5 @@
-import { chromium, type BrowserContext, type CDPSession, type Page } from "playwright";
+import { type BrowserContext, type CDPSession, type Page } from "playwright";
+import { launchChromium } from "./ensure_chromium.js";
 import { mkdir } from "node:fs/promises";
 import type { FlowSpec, FlowStep, FlowStepResult, FlowCaptureResult, CapturedFrame } from "../flow/types.js";
 
@@ -53,7 +54,7 @@ export async function runFlowCapture(opts: FlowCaptureOptions): Promise<FlowCapt
 
   if (opts.videoDir) await mkdir(opts.videoDir, { recursive: true });
 
-  const browser = await chromium.launch({ headless: true });
+  const browser = await launchChromium({ headless: true });
   const context = await browser.newContext({
     viewport: { width: viewport.width, height: viewport.height },
     deviceScaleFactor: 2,
