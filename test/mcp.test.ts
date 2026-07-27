@@ -54,6 +54,7 @@ describe("MCP server smoke test", () => {
     assert.ok(tools, "tools/list must return a tools array");
     const names = tools!.map((t) => t.name).sort();
     assert.deepEqual(names, [
+      "audit_animations",
       "get_latest_report",
       "review_flow",
       "review_routes",
@@ -68,5 +69,32 @@ describe("MCP server smoke test", () => {
       const props = schemas.find((t) => t.name === tool)?.inputSchema?.properties ?? {};
       assert.ok("max_pr_annotations" in props, `${tool} must expose max_pr_annotations`);
     }
+  });
+
+  it("audit_animations returns a deterministic AnimationAudit for a real page (requires demo server on :4173)", async () => {
+    // Launches a browser + reads real computed values, so it needs a generous
+    // timeout relative to the tools/list smoke test.
+    const responses = await rpcExchange(
+      [
+        { jsonrpc: "2.0", id: 1, method: "initialize", params: { protocolVersion: "2024-11-05", capabilities: {}, clientInfo: { name: "audit", version: "0" } } },
+        { jsonrpc: "2.0", id: 2, method: "tools/call", params: { name: "audit_animations", arguments: { url: "http://localhost:4173/cat" } } },
+      ],
+      60_000,
+    );
+    const call = responses.find((r) => r.id === 2);
+    assert.ok(call?.result, `audit_animations must return a result, got: ${JSON.stringify(call)}`);
+    assert.notEqual((call!.result as { isError?: boolean }).isError, true, "audit_animations must not error");
+
+    const content = (call!.result as { content?: Array<{ text?: string }> }).content;
+    const text = content?.[0]?.text ?? "";
+    const audit = JSON.parse(text) as {
+      url: string;
+      total_animations: number;
+      score: number;
+      findings: unknown[];
+    };
+    assert.equal(audit.url, "http://localhost:4173/cat");
+    assert.ok(typeof audit.score === "number" && audit.score >= 0 && audit.score <= 100, "score must be 0–100");
+    assert.ok(Array.isArray(audit.findings), "findings must be an array");
   });
 });

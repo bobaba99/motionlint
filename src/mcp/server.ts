@@ -108,6 +108,20 @@ const TOOLS = [
     },
   },
   {
+    name: "audit_animations",
+    description: "Deterministically audit a page's animations against motion-design standards (easing, duration budgets, stagger, exit timing, physicality, performance, reduced-motion). Runs NO vision LLM — it reads real computed values from the live page and checks them against fixed rules, so it needs no API key, costs nothing, and returns the same result every run. Ideal for a tight agent loop: audit → fix → re-audit. Returns a JSON AnimationAudit with a 0–100 score and ranked findings, each carrying the measured value, the standard it violates, and a concrete fix. Use this (not review_url) when the user wants motion quality checked cheaply and repeatably.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        url: { type: "string", description: "URL to audit animations on." },
+        viewport_width: { type: "number", description: "Capture viewport width. Default 1280." },
+        viewport_height: { type: "number", description: "Capture viewport height. Default 800." },
+        settle_ms: { type: "number", description: "Time to wait after load for animations to register. Default 1500." },
+      },
+      required: ["url"],
+    },
+  },
+  {
     name: "get_latest_report",
     description: "Return the most recent UX review report content.",
     inputSchema: {
@@ -163,6 +177,13 @@ interface TuneAnimationsArgs {
   viewport_height?: number;
   settle_ms?: number;
   output?: string;
+}
+
+interface AuditAnimationsArgs {
+  url: string;
+  viewport_width?: number;
+  viewport_height?: number;
+  settle_ms?: number;
 }
 
 let lastReport: { rendered: string; format: OutputFormat; report: ReviewReport; path: string | null } | null = null;
@@ -273,6 +294,23 @@ async function handleTuneAnimations(args: TuneAnimationsArgs): Promise<string> {
   ].join("\n");
 }
 
+async function handleAuditAnimations(args: AuditAnimationsArgs): Promise<string> {
+  const { extractAnimations } = await import("../tuner/extract.js");
+  const { auditAnimations } = await import("../tuner/lint.js");
+
+  const capture = await extractAnimations({
+    url: args.url,
+    viewport: { width: args.viewport_width ?? 1280, height: args.viewport_height ?? 800 },
+    settleMs: args.settle_ms ?? 1500,
+  });
+  const audit = auditAnimations(capture);
+
+  // Return the raw AnimationAudit — it is already fully JSON-serializable, and
+  // an agent gets more from the structured findings (measured value, standard,
+  // fix per finding) than from prose.
+  return JSON.stringify(audit, null, 2);
+}
+
 export async function startMcpServer(): Promise<void> {
   const server = new Server(
     { name: "motionlint", version: PACKAGE_VERSION },
@@ -330,6 +368,11 @@ export async function startMcpServer(): Promise<void> {
         case "tune_animations": {
           const args = (req.params.arguments ?? {}) as unknown as TuneAnimationsArgs;
           const text = await handleTuneAnimations(args);
+          return { content: [{ type: "text", text }] };
+        }
+        case "audit_animations": {
+          const args = (req.params.arguments ?? {}) as unknown as AuditAnimationsArgs;
+          const text = await handleAuditAnimations(args);
           return { content: [{ type: "text", text }] };
         }
         case "get_latest_report": {

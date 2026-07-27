@@ -1,4 +1,5 @@
-import { chromium, type Browser, type BrowserContext, type Page } from "playwright";
+import { type Browser, type BrowserContext, type Page } from "playwright";
+import { launchChromium } from "./ensure_chromium.js";
 import type { AuthConfig, Viewport } from "../types.js";
 
 export interface BrowserSession {
@@ -42,7 +43,7 @@ export async function applyPageAuth(page: Page, url: string, auth: AuthConfig | 
 }
 
 export async function launchBrowserSession(opts: BrowserSessionOptions): Promise<BrowserSession> {
-  const browser = await chromium.launch({ headless: true });
+  const browser = await launchChromium({ headless: true });
   const context = await browser.newContext({
     viewport: { width: opts.viewport.width, height: opts.viewport.height },
     deviceScaleFactor: 2,

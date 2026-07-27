@@ -1,5 +1,5 @@
 import { createHash } from "node:crypto";
-import { chromium } from "playwright";
+import { launchChromium } from "../capture/ensure_chromium.js";
 import { INSTRUMENTATION_SOURCE } from "./instrument.js";
 import { EMIL_EASING_PRESETS } from "./standards.js";
 import type { AnimationParam, AnimationPreset, AnimationSource, DetectedAnimation, TunerCapture } from "./types.js";
@@ -139,7 +139,7 @@ export interface ExtractOptions {
  */
 export async function extractAnimations(opts: ExtractOptions): Promise<TunerCapture> {
   const viewport = opts.viewport ?? { width: 1280, height: 800 };
-  const browser = await chromium.launch({ headless: true });
+  const browser = await launchChromium({ headless: true });
   const context = await browser.newContext({ viewport });
   await context.addInitScript({ content: INSTRUMENTATION_SOURCE });
   const page = await context.newPage();
