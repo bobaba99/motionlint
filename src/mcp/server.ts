@@ -7,10 +7,23 @@ import {
   ReadResourceRequestSchema,
 } from "@modelcontextprotocol/sdk/types.js";
 import { readFile } from "node:fs/promises";
+import { createRequire } from "node:module";
 import { runReview } from "../pipeline.js";
 import { loadConfig } from "../config/loader.js";
 import { sharedReviewGate } from "../resources/limiter.js";
 import type { OutputFormat, ReviewReport } from "../types.js";
+
+/**
+ * Reported to MCP clients in the initialize handshake. Read from package.json so it
+ * cannot drift from the published package the way the previous hardcoded literal did.
+ */
+const PACKAGE_VERSION: string = (() => {
+  try {
+    return createRequire(import.meta.url)("../../package.json").version ?? "0.0.0";
+  } catch {
+    return "0.0.0";
+  }
+})();
 
 const TOOLS = [
   {
@@ -262,7 +275,7 @@ async function handleTuneAnimations(args: TuneAnimationsArgs): Promise<string> {
 
 export async function startMcpServer(): Promise<void> {
   const server = new Server(
-    { name: "motionlint", version: "0.1.0" },
+    { name: "motionlint", version: PACKAGE_VERSION },
     { capabilities: { tools: {}, resources: {} } },
   );
 

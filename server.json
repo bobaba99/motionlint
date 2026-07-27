@@ -1,0 +1,59 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.github.bobaba99/motionlint",
+  "title": "MotionLint",
+  "description": "Catch bad animations before they ship. Deterministic motion audit plus vision-LLM design review of your running app — durations, easing, stagger, exits, reduced-motion, and multi-viewport UX findings handed back to your coding agent.",
+  "repository": {
+    "url": "https://github.com/bobaba99/motionlint",
+    "source": "github"
+  },
+  "version": "0.2.1",
+  "packages": [
+    {
+      "registryType": "npm",
+      "registryBaseUrl": "https://registry.npmjs.org",
+      "identifier": "motionlint",
+      "version": "0.2.1",
+      "transport": {
+        "type": "stdio"
+      },
+      "packageArguments": [
+        {
+          "type": "positional",
+          "value": "mcp",
+          "description": "Starts MotionLint in MCP stdio server mode."
+        }
+      ],
+      "environmentVariables": [
+        {
+          "name": "ANTHROPIC_API_KEY",
+          "description": "Anthropic API key for vision-LLM review. Optional — the deterministic audit needs no key, and Ollama, OpenAI or Google can be used instead.",
+          "isRequired": false,
+          "isSecret": true,
+          "format": "string"
+        },
+        {
+          "name": "OPENAI_API_KEY",
+          "description": "OpenAI API key for vision-LLM review. Optional.",
+          "isRequired": false,
+          "isSecret": true,
+          "format": "string"
+        },
+        {
+          "name": "GOOGLE_API_KEY",
+          "description": "Google API key for vision-LLM review. Optional.",
+          "isRequired": false,
+          "isSecret": true,
+          "format": "string"
+        },
+        {
+          "name": "OPENAI_BASE_URL",
+          "description": "Override the OpenAI base URL to target an OpenAI-compatible endpoint. Optional.",
+          "isRequired": false,
+          "isSecret": false,
+          "format": "string"
+        }
+      ]
+    }
+  ]
+}
