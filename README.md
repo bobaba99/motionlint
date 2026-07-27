@@ -33,7 +33,7 @@ MotionLint closes that loop: it measures the running app and feeds the verdict b
 | **Live animation tuning** | **Shadow-DOM previews + sliders + Claude Code export** | ✗ | generates new motion, doesn't tune what's there |
 | Native MCP server | ✓ stdio MCP for Claude Code / Cursor | ✗ | varies |
 | CI gate | ✓ SARIF + exit codes for code scanning | ✓ image diff thresholds | ✗ |
-| Validated quality | **100% recall · 0% FPR on 24-fixture stress test** | n/a | n/a |
+| Validated quality | **100% recall on a 24-fixture stress test, across 5 frontier models** | n/a | n/a |
 
 The conceptual gap MotionLint closes: visual-regression tools catch what *changed* but not whether the new pixels are *good*; AI design tools generate from scratch but don't review what's already running. MotionLint reviews live behavior with a vision LLM and feeds the verdict back into the coding loop.
 
@@ -175,47 +175,56 @@ MotionLint auto-detects in this order: **Ollama (local) → Anthropic → OpenAI
 
 The flow-review pipeline was stress-tested across **12 popular web-app animation patterns × 2 variants** (24 fixtures total) — staggered entrances, hover/press/focus, modal entrances, loading skeletons, form errors, toasts, counter ramps, multi-animation dashboards, modal-with-content stagger, rich form feedback (focus + press + spinner + success), and scroll-driven animations (progress bar + IntersectionObserver reveal + parallax).
 
-Run on **2026-04-29** against the latest model from each major provider plus three Ollama-served local models:
+Run on **2026-07-27** against the current flagship from each major provider:
 
-| Provider · model | Recall (broken caught) | FPR (clean flagged) | Score gap | Wall time¹ |
+| Provider · model | Recall (broken caught) | FPR (clean flagged) | Score gap | Wall time |
 | --- | --- | --- | --- | --- |
-| **OpenAI · gpt-5.5** | **100%** (12/12) | **0%** (0/12) | +4.2 | 11.6 min |
-| **Anthropic · claude-opus-4-7** | **100%** (12/12) | 8% (1/12) | +4.2 | 9.6 min |
-| **Anthropic · claude-sonnet-4-6** | **100%** (12/12) | 8% (1/12) | +5.1 | 14.2 min |
-| **Ollama · nemotron3:33b** (local, 27 GB) | **100%** (12/12) | 25% (3/12) | +5.1 | 7.7 min |
-| **Google · gemini-3.1-pro-preview** | 92% (11/12) | **0%** (0/12) | +5.5 | 5.3 min |
-| **Ollama · gemma3:4b** (local, 3.3 GB) | 83% (10/12) | 17% (2/12) | +1.1 | 3.6 min |
-| **Ollama · glm-ocr** (local, 2.2 GB) | 33% (4/12) | 33% (4/12) | +0.3 | 11.3 min |
+| **OpenAI · gpt-5.6-sol** | **100%** (12/12) | 0% (0/12) | +3.3 | 10.9 min |
+| **OpenAI · gpt-5.5** | **100%** (12/12) | 0% (0/12) | +3.3 | 11.5 min |
+| **Anthropic · claude-opus-5** | **100%** (12/12) | 8% (1/12) | +4.1 | 21.0 min |
+| **Google · gemini-3.6-flash** | **100%** (12/12) | 17% (2/12) | +5.1 | 4.9 min |
+| **Anthropic · claude-sonnet-5** | **100%** (12/12) | 33% (4/12) | +3.1 | 10.8 min |
 
-¹ Local-model wall times measured on an Apple M4 Max (128 GB unified). Cloud-provider times reflect API latency, not local compute.
+**Read this as: recall is no longer a differentiator.** Every current flagship catches all 12 seeded faults. That is the finding — a year ago it wasn't true, and it means the model choice no longer decides whether MotionLint works. Pick on cost and latency.
 
-**Read this as:** six of the seven model combinations are shippable for at least one workflow. **OpenAI gpt-5.5 remains the only provider with 100% recall AND 0% FPR** — the safest hard CI gate. The standout new result: **nemotron3:33b is the first 100%-recall local model**, ties Sonnet 4.6 on score gap, runs entirely on-device, and costs $0 — but its 25% false-positive rate (3 clean fixtures flagged critical) means it's better as an iteration-loop reviewer than a merge-blocker on a powerful local machine. Both Anthropic models match on recall and flag the same one clean fixture; Sonnet 4.6 is the better Anthropic value (~5× cheaper per token than Opus, equivalent quality on this test). Gemini 3.1 Pro is ~3× faster and 5× cheaper than Sonnet, at the cost of one missed broken pattern. **glm-ocr is too weak for this task** (33% recall, 33% FPR — barely above coin-flip) and is documented here only so future readers don't try the same path.
+**Do not rank these models on the FPR column.** A single 24-fixture run cannot resolve it. Across two clean runs of the identical suite, with nothing changed but sampling, FPR moved by 1–2 fixtures per model — `gpt-5.5` 1/12 → 0/12, `gpt-5.6-sol` 2/12 → 0/12, `gemini-3.6-flash` 3/12 → 2/12. One fixture is 8 percentage points, so the entire spread between "0%" and "17%" sits inside the noise floor. Treat the column as *"all of these occasionally flag something clean"*, not as a ranking.
 
-Full per-provider scorecards in [.motionlint/stress/](.motionlint/stress/) after running [scripts/run-all-benchmarks.mjs](scripts/run-all-benchmarks.mjs).
+<details>
+<summary>Why the older numbers in this table's history were wrong</summary>
+
+The first 2026-07-27 run of this suite put `claude-opus-5` at 83% recall — last among all five models — and the 2026-04-29 edition of this table reported several models at 0% FPR. Both were artifacts of a MotionLint bug, not model behaviour.
+
+Anthropic's `max_tokens` defaulted to 4096. Verbose responses hit the ceiling mid-JSON, and the unparseable result was scored as `0/10, no issues found` — indistinguishable from a clean review. Two of Opus 5's three truncations landed on broken fixtures, which produced the entire 83% figure.
+
+The same bug deflated FPR everywhere: a truncated review reports *nothing*, so it cannot raise a false positive. Any historical "0% FPR" was partly measuring broken parsing rather than model precision. Fixed 2026-07-27, along with the sibling paths that turned truncated, refused, and safety-blocked responses into clean-looking results.
+
+</details>
+
+Full per-provider scorecards in [.motionlint/stress/](.motionlint/stress/) after running [scripts/run-all-benchmarks.mjs](scripts/run-all-benchmarks.mjs). Use `--only <provider>:<model>` to re-run a single model.
 
 ## Providers in depth
 
-| Provider | Default model | Setup | Quality (24 fixtures) | Cost per review¹ |
+| Provider | Model | Setup | Quality (24 fixtures) | Cost per review¹ |
 | --- | --- | --- | --- | --- |
-| `openai` | `gpt-5.5` | `OPENAI_API_KEY=…` | **100% recall · 0% FPR · +4.2 gap** | ~$0.005 |
-| `anthropic` | `claude-opus-4-7` | `ANTHROPIC_API_KEY=…` | **100% recall** · 8% FPR · +4.2 gap | ~$0.025 |
-| `anthropic` | `claude-sonnet-4-6` | `ANTHROPIC_API_KEY=…` | **100% recall** · 8% FPR · +5.1 gap | ~$0.005 |
-| `ollama` | `nemotron3:33b` (local, 27 GB) | `ollama serve` + `ollama pull nemotron3:33b` | **100% recall** · 25% FPR · +5.1 gap | $0 |
-| `google` | `gemini-3.1-pro-preview` | `GOOGLE_API_KEY=…` | 92% recall · **0% FPR** · +5.5 gap | ~$0.001 |
-| `ollama` | `gemma3:4b` (local, 3.3 GB) | `ollama serve` + `ollama pull gemma3:4b` | 83% recall · 17% FPR · +1.1 gap | $0 |
-| `ollama` | `glm-ocr` (local, 2.2 GB) | `ollama serve` + `ollama pull glm-ocr` | 33% recall · 33% FPR · +0.3 gap | $0 |
+| `google` | `gemini-3.6-flash` | `GOOGLE_API_KEY=…` | 100% recall · 17% FPR · +5.1 gap | **$0.019** |
+| `anthropic` | `claude-sonnet-5` | `ANTHROPIC_API_KEY=…` | 100% recall · 33% FPR · +3.1 gap | $0.089 |
+| `openai` | `gpt-5.5` | `OPENAI_API_KEY=…` | 100% recall · 0% FPR · +3.3 gap | $0.248 |
+| `openai` | `gpt-5.6-sol` | `OPENAI_API_KEY=…` | 100% recall · 0% FPR · +3.3 gap | $0.265 |
+| `anthropic` | `claude-opus-5` | `ANTHROPIC_API_KEY=…` | 100% recall · 8% FPR · +4.1 gap | $0.293 |
+| `ollama` | any vision model | `ollama serve` + `ollama pull <model>` | not benchmarked in this run | $0 |
 | `mock` | heuristic stub | (auto fallback) | n/a — deterministic stub for CI smoke tests | $0 |
 
-¹ Order-of-magnitude estimate per static review at the default 2 viewports. Flow review is one composite image per flow but the contact sheet is bigger. The Animation Tuner makes 0 LLM calls.
+¹ **Measured, not estimated** — one real `motionlint review` per model against the demo app at the default 2 viewports, full-page, reading actual token counts from each provider's usage field and multiplying by published list price. Reproduce with `formatUsageLine()` on any run. Sonnet 5 uses its introductory rate (through 2026-08-31); it roughly rises by half after that. Flow review sends one composite image per flow but the contact sheet is larger. The Animation Tuner and `motionlint audit` make **zero** LLM calls and cost nothing.
+
+**Output tokens dominate.** Input is within 2× across all five models; output spans 1,390 (Gemini) to 10,219 (Opus 5). That 7× spread, not image size, is what makes the most expensive model 15× the cheapest.
 
 ### How to pick
 
-- **Best quality, hard CI gate.** OpenAI `gpt-5.5` — the only provider that hit 100% recall *and* 0% FPR.
-- **Best Anthropic value.** Anthropic `claude-sonnet-4-6` ties Opus 4.7 on recall and FPR (both 100% / 8%) and is **5× cheaper per token**. Pass `--model claude-opus-4-7` for the Opus tier; otherwise Sonnet 4.6.
-- **Best local quality (NEW).** Ollama `nemotron3:33b` — first local model at 100% recall, ties Sonnet 4.6 on score gap. 25% FPR keeps it out of hard CI gates, but it's the right pick for iteration loops and air-gapped reviews when you have ≥32 GB unified memory and don't want to pay per-call.
-- **Cost-sensitive CI.** Google `gemini-3.1-pro-preview` — 5× cheaper than Anthropic Sonnet, ~3× faster, 0% FPR, missed one broken pattern. Run the stress test on your own flows before relying on it as a hard merge gate.
-- **Lightweight local.** Ollama `gemma3:4b` (3.3 GB). 83% recall, 17% FPR. Use when nemotron3:33b doesn't fit in memory or when you need faster turn-around per fixture.
-- **Skip:** Ollama `glm-ocr` is OCR-tuned and too weak for general design review (33% recall / 33% FPR).
+- **Default.** Google `gemini-3.6-flash` — 100% recall, **13× cheaper** than Opus 5 and the fastest of the five (4.9 min). Since every model caught every fault, there is no quality argument for paying more by default.
+- **Anthropic house.** `claude-sonnet-5` at $0.089 — 3× cheaper than `claude-opus-5` with identical recall. Opus 5 costs more and took **2× the wall time** (21.0 min vs 10.8) for no measured recall advantage; reach for it only if you value its slightly higher score gap (+4.1 vs +3.1).
+- **OpenAI house.** `gpt-5.5` and `gpt-5.6-sol` are indistinguishable on every measured axis and within 7% on price. Take whichever your account already has.
+- **Hard CI gate.** Any of them on recall. Do not pick on FPR — see the noise-floor caveat above. If false positives matter to your gate, run your own fixtures rather than trusting a single 24-fixture run of ours.
+- **Local / air-gapped.** Any Ollama vision model works, but confirm it *is* vision-capable: some accept images over the API, silently ignore them, and answer from the prompt alone. None was benchmarked in this run.
 
 ### Switching providers
 

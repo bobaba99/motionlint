@@ -12,13 +12,33 @@ loadEnv();
 
 const { runStress, renderStressMarkdown } = await import("../dist/flow/stress.js");
 
-// (provider, model) pairs to benchmark. Latest of each as of 2026-04-27.
+// (provider, model) pairs to benchmark. Latest of each as of 2026-07-27.
+// gpt-5.5 is kept for continuity with the 2026-04-29 table — it was that run's
+// only 100%-recall / 0%-FPR model, so it doubles as the control that tells us how
+// much of any delta comes from the model versus the flow-prompt change in cc1104d.
 const RUNS = [
-  { provider: "anthropic", model: "claude-sonnet-4-6",        env: "ANTHROPIC_API_KEY" },
-  { provider: "openai",    model: "gpt-5.5",                  env: "OPENAI_API_KEY" },
-  { provider: "google",    model: "gemini-3.1-pro-preview",   env: "GOOGLE_API_KEY" },
-  { provider: "ollama",    model: "gemma3:4b",                env: null, requiresOllama: true },
+  { provider: "anthropic", model: "claude-opus-5",    env: "ANTHROPIC_API_KEY" },
+  { provider: "anthropic", model: "claude-sonnet-5",  env: "ANTHROPIC_API_KEY" },
+  { provider: "openai",    model: "gpt-5.6-sol",      env: "OPENAI_API_KEY" },
+  { provider: "openai",    model: "gpt-5.5",          env: "OPENAI_API_KEY" },
+  { provider: "google",    model: "gemini-3.6-flash", env: "GOOGLE_API_KEY" },
 ];
+
+// `--only <substring>` (repeatable) narrows the lineup, so a single model can be
+// re-run without redoing the whole table. Matches against "provider:model".
+const onlyFilters = process.argv.reduce((acc, arg, i) => {
+  if (arg === "--only" && process.argv[i + 1]) acc.push(process.argv[i + 1].toLowerCase());
+  return acc;
+}, []);
+const SELECTED = onlyFilters.length
+  ? RUNS.filter((r) => onlyFilters.some((f) => `${r.provider}:${r.model}`.toLowerCase().includes(f)))
+  : RUNS;
+
+if (!SELECTED.length) {
+  console.error(`No runs matched --only ${onlyFilters.join(", ")}`);
+  console.error(`Available: ${RUNS.map((r) => `${r.provider}:${r.model}`).join(", ")}`);
+  process.exit(1);
+}
 
 const OUT_DIR = resolve(".motionlint/stress");
 await mkdir(OUT_DIR, { recursive: true });
@@ -79,11 +99,16 @@ async function runOne(run) {
   return summary;
 }
 
-const results = await Promise.all(RUNS.map(runOne));
+const results = await Promise.all(SELECTED.map(runOne));
 
+// A filtered run must not clobber the full table; write a scoped aggregate instead
+// and let the caller merge.
+const aggregateName = onlyFilters.length
+  ? `AGGREGATE-${onlyFilters.join("_").replace(/[^a-z0-9]+/gi, "-")}.json`
+  : "AGGREGATE.json";
 const aggregate = { generated_at: new Date().toISOString(), runs: results };
-await writeFile(join(OUT_DIR, "AGGREGATE.json"), JSON.stringify(aggregate, null, 2), "utf8");
+await writeFile(join(OUT_DIR, aggregateName), JSON.stringify(aggregate, null, 2), "utf8");
 
 console.error(`\n=== AGGREGATE ===`);
 console.error(JSON.stringify(aggregate.runs, null, 2));
-console.error(`\nWrote ${OUT_DIR}/AGGREGATE.json + per-provider SCORECARD-*.md / report-*.json`);
+console.error(`\nWrote ${join(OUT_DIR, aggregateName)} + per-provider SCORECARD-*.md / report-*.json`);
