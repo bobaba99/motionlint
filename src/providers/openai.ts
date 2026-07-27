@@ -67,8 +67,40 @@ export class OpenAIProvider implements VisionProvider {
       throw new Error(`OpenAI API ${res.status}: ${text.slice(0, 400)}`);
     }
 
-    const json = (await res.json()) as { choices?: Array<{ message?: { content?: string } }> };
-    const text = json.choices?.[0]?.message?.content ?? "";
+    const json = (await res.json()) as {
+      choices?: Array<{
+        message?: { content?: string; refusal?: string; reasoning_content?: string };
+        finish_reason?: string;
+      }>;
+    };
+    const choice = json.choices?.[0];
+
+    // All three of these arrive as HTTP 200, so the !res.ok throw above never
+    // fires. Without these checks each becomes an empty string, then a parse
+    // failure, then `overall_score: 0, issues: []` — a clean bill of health for a
+    // review that never happened.
+    if (choice?.finish_reason === "length") {
+      throw new Error(
+        "OpenAI response was truncated (finish_reason: length) and the JSON is incomplete. " +
+          "Raise the completion cap rather than trusting a partial review.",
+      );
+    }
+    if (choice?.message?.refusal) {
+      throw new Error(`OpenAI refused the request: ${choice.message.refusal.slice(0, 200)}`);
+    }
+
+    // OpenAI-compatible endpoints for thinking models (Moonshot/Kimi, DeepSeek,
+    // vLLM) put the answer in `reasoning_content` and leave `content` empty.
+    const text = choice?.message?.content?.trim()
+      ? choice.message.content
+      : (choice?.message?.reasoning_content ?? "");
+
+    if (!text.trim()) {
+      throw new Error(
+        `OpenAI returned no usable content (finish_reason: ${choice?.finish_reason ?? "unknown"}).`,
+      );
+    }
+
     return { ...parseAnalysisResponse(text, viewportName), usage: usageFromOpenAI(json) };
   }
 }
