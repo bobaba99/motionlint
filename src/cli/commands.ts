@@ -1,6 +1,7 @@
 import { Command } from "commander";
 import kleur from "kleur";
 import { readFile } from "node:fs/promises";
+import { createRequire } from "node:module";
 import { runReview } from "../pipeline.js";
 import { loadConfig } from "../config/loader.js";
 import { parseInteractionsFromString } from "../capture/interactions.js";
@@ -14,6 +15,16 @@ import type { OutputFormat, IssueSeverity } from "../types.js";
 const VALID_FORMATS: ReadonlyArray<OutputFormat> = ["md", "json", "sarif", "html"];
 const VALID_SEVERITIES: ReadonlyArray<IssueSeverity> = ["critical", "warning", "suggestion"];
 
+/** Read from package.json so `--version` can't drift from the published package,
+    the same way the MCP server reports its version (src/mcp/server.ts). */
+const PACKAGE_VERSION: string = (() => {
+  try {
+    return createRequire(import.meta.url)("../../package.json").version ?? "0.0.0";
+  } catch {
+    return "0.0.0";
+  }
+})();
+
 function fail(message: string): never {
   console.error(kleur.red(`✗ ${message}`));
   process.exit(2);
@@ -24,7 +35,7 @@ export function buildProgram(): Command {
   program
     .name("motionlint")
     .description("AI design review in your terminal — automated UI/UX analysis using vision LLMs.")
-    .version("0.1.0");
+    .version(PACKAGE_VERSION);
 
   program
     .command("review <url>")

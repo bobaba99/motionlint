@@ -40,7 +40,6 @@
   },
   "files": [
     "dist",
-    "prompts",
     ".motionlintrc.json",
     "README.md",
     "LICENSE"
@@ -56,7 +55,7 @@
     "test": "node --test --import tsx test/*.test.ts",
     "demo": "node demo/server.mjs",
     "review:demo": "npm run build && node dist/index.js review http://localhost:4173 --record",
-    "postinstall": "node -e \"console.error('\\n  [motionlint] One more step: install Playwright Chromium so capture works:\\n    npx playwright install chromium\\n')\""
+    "postinstall": "node -e \"console.error('  [motionlint] Chromium installs automatically on first run, or now with: npx playwright install chromium')\""
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.0.4",
