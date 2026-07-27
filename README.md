@@ -2,23 +2,32 @@
 
 [![npm version](https://img.shields.io/npm/v/motionlint)](https://www.npmjs.com/package/motionlint) [![license: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE) [![CI](https://github.com/bobaba99/motionlint/actions/workflows/ci.yml/badge.svg)](https://github.com/bobaba99/motionlint/actions/workflows/ci.yml)
 
-## The problem
+**Score any page's animation quality in one command. No API key, no config.**
 
-AI coding agents read JSX, HTML, and CSS — they're blind to what the user actually sees, clicks, and watches animate. Spacing that looks correct in code renders broken; modals that should slide in just pop; loading states get omitted; focus rings disappear. Code review can't catch any of this before merge.
-
-## What MotionLint does
-
-MotionLint is a vision-LLM design reviewer that runs in your terminal and as an MCP server inside Claude Code, Cursor, or any MCP-aware client. It captures what your app actually *does* — multi-viewport screenshots, 50ms-interval frame bursts after every interaction, and an interactive timing tuner — then hands ranked, actionable findings back to your coding agent.
+```bash
+npx motionlint audit http://localhost:3000 --open
+```
 
 <p align="center">
   <img src="docs/media/cli-audit.gif" width="800" alt="motionlint audit running in a terminal: the demo app's /loading route scores 64/100 with findings across duration, easing and accessibility">
 </p>
-<p align="center"><sub><code>motionlint audit</code> scoring a page — deterministic, no LLM. More demos: clone the repo and open <a href="demo/walkthrough/">demo/walkthrough/index.html</a>.</sub></p>
+<p align="center"><sub>Deterministic — measured from the live page, no LLM involved. One-time prerequisite: <code>npx playwright install chromium</code>.</sub></p>
+
+MotionLint measures the motion your app actually ships — durations, easing curves, stagger intervals, exit timing, reduced-motion support — and scores it against a published set of [animation standards](docs/STANDARDS.md). Ease-in on a dropdown, a 600ms modal, a card that scales from 0, hover motion that fires on touch: all caught, all with the measured value and a concrete fix.
+
+The audit is free and offline. Add an API key and MotionLint also does **vision-LLM design review** — multi-viewport screenshots and 50ms frame bursts of real user journeys, judged by a model and handed back to your coding agent as ranked findings. It runs as an MCP server inside Claude Code and Cursor.
+
+## Why this exists
+
+AI coding agents read JSX, HTML, and CSS — they're blind to what the user actually sees, clicks, and watches animate. Rules in a prompt tell the agent what *should* happen; nothing checks what *did*. Modals that should slide in just pop; loading states get omitted; focus rings disappear. Code review can't catch any of this before merge, because none of it is visible in the diff.
+
+MotionLint closes that loop: it measures the running app and feeds the verdict back.
 
 ## How it's different
 
 | | MotionLint | Visual regression tools (Percy, Chromatic, Playwright snapshots) | AI design generators (v0, Galileo, Claude Design, Stitch) |
 | --- | --- | --- | --- |
+| **Deterministic motion audit** | **13 checks, measured from the live page — no API key, $0** | ✗ | ✗ |
 | Multi-viewport UX review | ranked findings across 12 dimensions | pixel diffs only | generates new layouts from prompts |
 | **Animation review** | **50ms frame bursts via CDP screencast → contact sheet → LLM** | ✗ | ✗ |
 | **Live animation tuning** | **Shadow-DOM previews + sliders + Claude Code export** | ✗ | generates new motion, doesn't tune what's there |
@@ -28,54 +37,61 @@ MotionLint is a vision-LLM design reviewer that runs in your terminal and as an 
 
 The conceptual gap MotionLint closes: visual-regression tools catch what *changed* but not whether the new pixels are *good*; AI design tools generate from scratch but don't review what's already running. MotionLint reviews live behavior with a vision LLM and feeds the verdict back into the coding loop.
 
-## Install
+## Start here — no API key needed
 
 ```bash
-# CLI
-npm install -g motionlint                              # global
-npx motionlint review <url>                            # one-shot, no install
-
-# Claude Code (MCP server)
-claude mcp add motionlint -- npx -y motionlint mcp
-
-# One-time per machine: Playwright Chromium (~300MB)
-npx playwright install chromium
+npx playwright install chromium          # one-time per machine (~300MB)
+npx motionlint audit http://localhost:3000 --open
 ```
 
-Requires Node 18+. Package on npm: [motionlint](https://www.npmjs.com/package/motionlint).
+That's the whole setup for the audit. It's deterministic, runs offline, costs nothing, and works on any URL you can load — your dev server, a staging deploy, or someone else's site. Requires Node 18+.
 
-## Quick start
+The rules it checks are published in [docs/STANDARDS.md](docs/STANDARDS.md) — read them before you install anything.
+
+## Then: LLM design review
+
+Set one API key (`ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, or `GOOGLE_API_KEY` — or run Ollama locally for free) and three more commands unlock:
 
 ```bash
-# Static review of a URL at mobile + desktop → Markdown report.
+npm install -g motionlint
+
+# Multi-viewport UX review of a page → ranked findings across 12 dimensions.
 motionlint review http://localhost:3000
 
-# Animation review of a scripted user journey → contact sheet + flow report.
+# Animation review of a scripted user journey → frame contact sheet + report.
 motionlint flow --spec flows/signup.json
 
-# Detect every animation on a page → interactive HTML tuner.
+# Interactive HTML tuner — every animation on the page, with live sliders.
 motionlint tune http://localhost:3000
+```
 
-# Lint a page's motion against Emil Kowalski's standards → polished HTML audit (no LLM).
-motionlint audit http://localhost:3000 --open
+### Inside Claude Code / Cursor
 
-# Track provider quality across runs + teach the reviewer from eval misses.
-motionlint eval --provider anthropic --evolve
+```bash
+claude mcp add motionlint -- npx -y motionlint mcp
+```
 
-# Interaction affordances — grid each element's default/hover/focus/active states.
-motionlint review http://localhost:3000 --state-grid
+<details>
+<summary><b>Full flag surface</b> — CI gates, route discovery, Storybook, dark mode, baselines</summary>
 
-# Review every route the site knows about (sitemap.xml + Next.js app/ directory).
-motionlint review http://localhost:3000 --discover-routes
+```bash
+# CI mode — non-zero exit on critical issues, SARIF output for code scanning.
+motionlint review https://staging.acme.dev --ci --threshold critical --format sarif -o ux.sarif
 
 # Polished, shareable HTML review with embedded screenshots + before/after fixes.
 motionlint review http://localhost:3000 --format html -o review.html
 
-# CI mode — non-zero exit on critical issues, SARIF output for code scanning.
-motionlint review https://staging.acme.dev --ci --threshold critical --format sarif -o ux.sarif
+# Review every route the site knows about (sitemap.xml + Next.js app/ directory).
+motionlint review http://localhost:3000 --discover-routes
 
-# Pick a provider explicitly (auto-detect picks the first reachable one).
-motionlint review http://localhost:3000 --provider anthropic --model claude-sonnet-4-6
+# Storybook mode — discover stories from /index.json, review each story iframe as its own route.
+motionlint review http://localhost:6006 --storybook
+
+# Color-scheme sweep — light and dark modes, plus Windows High Contrast.
+motionlint review http://localhost:3000 --schemes --forced-colors --format html -o review.html
+
+# Interaction affordances — grid each element's default/hover/focus/active states.
+motionlint review http://localhost:3000 --state-grid
 
 # Agent focus — keep only the top 5 findings, and only ones not seen in prior runs.
 motionlint review http://localhost:3000 --max-findings 5 --new-only
@@ -83,15 +99,19 @@ motionlint review http://localhost:3000 --max-findings 5 --new-only
 # Before/after comparison — PR preview vs. production baseline.
 motionlint review https://pr-123.preview.example.com --against https://prod.example.com
 
-# Color-scheme sweep — test both light and dark modes, plus Windows High Contrast.
-motionlint review http://localhost:3000 --schemes --forced-colors --format html -o review.html
-
-# Storybook mode — discover stories from /index.json, review each story iframe as its own route.
-motionlint review http://localhost:6006 --storybook
-
 # Reviewer focus — cap the SARIF upload at 10 annotations per report.
 motionlint review https://staging.acme.dev --format sarif -o ux.sarif --max-pr-annotations 10
+
+# Pick a provider explicitly (auto-detect picks the first reachable one).
+motionlint review http://localhost:3000 --provider anthropic --model claude-sonnet-4-6
+
+# Track provider quality across runs + teach the reviewer from eval misses.
+motionlint eval --provider anthropic --evolve
 ```
+
+</details>
+
+Package on npm: [motionlint](https://www.npmjs.com/package/motionlint).
 
 Sample terminal output for a flow review:
 
